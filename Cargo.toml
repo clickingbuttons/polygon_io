@@ -1,0 +1,12 @@
+[package]
+name = "polygon_io"
+version = "0.1.0"
+authors = ["clickingbuttons"]
+edition = "2018"
+
+[dependencies]
+chrono = "0.4"
+serde = "*"
+serde_json = "*"
+ureq = { version = "1.5.1", features = ["json"] }
+

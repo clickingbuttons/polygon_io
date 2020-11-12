@@ -148,16 +148,7 @@ mod aggs {
     let from = NaiveDate::from_ymd(2020, 11, 5);
     let to = NaiveDate::from_ymd(2020, 11, 5);
     let resp = client
-      .get_aggs(
-        "AAPL",
-        1,
-        Timespan::Minute,
-        from,
-        to,
-        None,
-        None,
-        None
-      )
+      .get_aggs("AAPL", 1, Timespan::Minute, from, to, None, None, None)
       .unwrap();
     assert_eq!(resp.results.len(), 941);
     assert_eq!(resp.results.len(), resp.results_count);

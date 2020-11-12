@@ -7,7 +7,6 @@ use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
 
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GroupedResponse {
   #[serde(rename(deserialize = "queryCount"))]
@@ -93,7 +92,14 @@ impl Client {
     let ts = date.and_hms(0, 0, 0).timestamp_nanos();
     for row in resp.results.iter_mut() {
       if NaiveDateTime::from_timestamp(row.ts / 1000, 0).date() != date {
-        return Err(Error::new(ErrorKind::BrokenPipe, format!("ts {} is out of range for date {}", ts, date.format("%Y-%m-%d"))));
+        return Err(Error::new(
+          ErrorKind::BrokenPipe,
+          format!(
+            "ts {} is out of range for date {}",
+            ts,
+            date.format("%Y-%m-%d")
+          )
+        ));
       }
       row.ts = ts;
     }
@@ -112,7 +118,9 @@ mod grouped {
   fn start() {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
-    let grouped = client.get_grouped(Locale::US, Market::Stocks, date, None).unwrap();
+    let grouped = client
+      .get_grouped(Locale::US, Market::Stocks, date, None)
+      .unwrap();
     assert_eq!(grouped.query_count, grouped.results_count);
     assert_eq!(grouped.query_count, 7670);
     assert_eq!(grouped.results.len(), 7670);
@@ -123,7 +131,9 @@ mod grouped {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     for _ in 0..50 {
-      client.get_grouped(Locale::US, Market::Stocks, date, None).unwrap();
+      client
+        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .unwrap();
     }
   }
 
@@ -138,7 +148,9 @@ mod grouped {
       NaiveDate::from_ymd(2020, 04, 14),
     ];
     for date in bad_dates {
-      let grouped = client.get_grouped(Locale::US, Market::Stocks, date, None).unwrap();
+      let grouped = client
+        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .unwrap();
       let mut has_bad_ticker = false;
       for candle in grouped.results {
         if !candle.symbol.chars().all(|c| c.is_ascii_graphic()) {
@@ -161,7 +173,9 @@ mod grouped {
       NaiveDate::from_ymd(2020, 04, 14),
     ];
     for date in bad_dates {
-      let grouped = client.get_grouped(Locale::US, Market::Stocks, date, None).unwrap();
+      let grouped = client
+        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .unwrap();
       let mut missing_vwap = false;
       for candle in grouped.results {
         if candle.volume > 0 && candle.vwap.is_nan() {
@@ -173,4 +187,3 @@ mod grouped {
     }
   }
 }
-

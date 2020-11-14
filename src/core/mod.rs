@@ -6,6 +6,7 @@ use std::fmt;
 
 pub mod aggs;
 pub mod grouped;
+pub mod last;
 
 fn f64_to_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
@@ -96,3 +97,4 @@ pub fn get_response(uri: &str) -> io::Result<Response> {
   }
   Ok(resp)
 }
+

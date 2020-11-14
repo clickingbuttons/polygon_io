@@ -8,10 +8,9 @@ use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GroupedResponse {
-  #[serde(rename(deserialize = "queryCount"))]
   pub query_count: usize,
-  #[serde(rename(deserialize = "resultsCount"))]
   pub results_count: usize,
   pub adjusted: bool,
   pub results: Vec<Candle>,

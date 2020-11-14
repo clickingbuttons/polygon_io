@@ -1,2 +1,3 @@
 pub mod client;
-pub mod equities;
+pub mod core;
+pub mod reference;

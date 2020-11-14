@@ -30,12 +30,11 @@ pub enum Sort {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AggResponse {
   #[serde(rename(deserialize = "ticker"))]
   pub symbol: String,
-  #[serde(rename(deserialize = "queryCount"))]
   pub query_count: usize,
-  #[serde(rename(deserialize = "resultsCount"))]
   pub results_count: usize,
   pub adjusted: bool,
   pub results: Vec<Candle>,
@@ -91,15 +90,17 @@ impl Client {
       return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
     }
 
+    let is_equity = !symbol.contains(":");
     let mut min_ts = i64::MAX;
     let mut max_ts = i64::MIN;
     for candle in resp.results.iter_mut() {
       // Polygon returns GMT milliseconds for this endpoint
-      candle.ts =
+      if is_equity {
         // Subtract 5h of milliseconds
-        (candle.ts - (5 * 60 * 60 * 1_000))
-        // Convert to ns
-        * 1_000_000;
+        candle.ts -= 5 * 60 * 60 * 1_000;
+      }
+      // Convert to ns
+      candle.ts *= 1_000_000;
       if candle.ts > max_ts {
         max_ts = candle.ts;
       }

@@ -1,6 +1,6 @@
 # polygon-io
 
-Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Built on ureq and chrono.
+Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for equities. Built on ureq and chrono.
 
 
 ## Endpoints
@@ -18,7 +18,7 @@ Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in que
 - [ ] /v2/reference/locales
 - 1 [x] /v2/reference/splits/{symbol}
 - 1 [x] /v2/reference/dividends/{symbol}
-- 2 [ ] /v2/reference/financials/{symbol}
+- 2 [x] /v2/reference/financials/{symbol}
 - [ ] /v1/marketstatus/now
 - [ ] /v1/marketstatus/upcoming
 

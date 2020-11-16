@@ -1,5 +1,6 @@
-pub mod splits;
 pub mod dividends;
+pub mod financials;
+pub mod splits;
 
 use serde::{Deserialize, de, Serializer};
 use chrono::NaiveDate;

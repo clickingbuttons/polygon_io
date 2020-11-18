@@ -1,6 +1,3 @@
-use std::io::{self, Error, ErrorKind};
-use ureq::Response;
-
 use serde::{de, Deserialize, Serialize};
 use std::fmt;
 
@@ -80,21 +77,5 @@ pub struct Candle {
 #[derive(Deserialize)]
 pub struct CandleResponse {
   pub results: Vec<Candle>
-}
-
-pub fn get_response(uri: &str) -> io::Result<Response> {
-  let resp = ureq::get(&uri)
-    .timeout_connect(10_000)
-    .timeout_read(10_000)
-    .call();
-
-  let status = resp.status();
-  if status != 200 {
-    return Err(Error::new(
-      ErrorKind::NotConnected,
-      format!("Server returned {}", status)
-    ));
-  }
-  Ok(resp)
 }
 

@@ -7,44 +7,45 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Market {
-  pub market: String,
-  pub desc: String,
+pub struct Locale {
+  pub locale: String,
+  pub name: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct MarketsResponse {
-  pub results: Vec<Market>,
+pub struct LocalesResponse {
+  pub results: Vec<Locale>,
   // For debugging
   pub status: String,
 }
 
 impl Client {
-  pub fn get_markets(&self) -> std::io::Result<MarketsResponse> {
+  pub fn get_locales(&self) -> std::io::Result<LocalesResponse> {
     let uri = format!(
-      "{}/v2/reference/markets?apikey={}",
+      "{}/v2/reference/locales?apikey={}",
       self.api_uri,
       self.key
     );
 
     let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<MarketsResponse>()?;
+    let resp = resp.into_json_deserialize::<LocalesResponse>()?;
 
     Ok(resp)
   }
 }
 
 #[cfg(test)]
-mod markets {
+mod locales {
   use crate::client::Client;
 
   #[test]
   fn works() {
     let client = Client::new();
-    let markets = client
-      .get_markets()
+    let locales = client
+      .get_locales()
       .unwrap();
-    assert!(markets.results.iter().any(|res| res.market == String::from("STOCKS")));
+    assert!(locales.results.len() > 17);
+    assert!(locales.results.iter().any(|res| res.locale == String::from("US")));
   }
 }
 

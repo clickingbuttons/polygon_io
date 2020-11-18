@@ -1,9 +1,12 @@
-# polygon-io
+# polygon_io
 
 Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for equities. Built on ureq and chrono.
 
 
 ## Endpoints
+
+Currently Core endpoints and some v2 equities are implemented. PRs for more endpoints are welcome.
+
 ### core
 - [x] /v2/aggs/ticker/{ticker}/prev
 - [x] /v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}
@@ -12,10 +15,10 @@ Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in que
 ### reference
 - [x] /v2/reference/tickers
 - [x] /v2/reference/types
-- [ ] /v1/meta/symbols/{symbol}/company
-- [ ] /v1/meta/symbols/{symbol}/news
+- [ ] /v1/meta/symbols/{symbol}/company (waiting on new symbols API)
+- [ ] /v1/meta/symbols/{symbol}/news (waiting on new symbols API)
 - [x] /v2/reference/markets
-- [ ] /v2/reference/locales
+- [x] /v2/reference/locales
 - [x] /v2/reference/splits/{symbol}
 - [x] /v2/reference/dividends/{symbol}
 - [x] /v2/reference/financials/{symbol}
@@ -24,8 +27,8 @@ Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in que
 
 ### equities
 - [ ] /v1/meta/exchanges
-- [ ] /v2/ticks/stocks/trades/{ticker}/{date}
-- [ ] /v2/ticks/stocks/nbbo/{ticker}/{date}
+- [x] /v2/ticks/stocks/trades/{ticker}/{date}
+- [x] /v2/ticks/stocks/nbbo/{ticker}/{date}
 - [ ] /v1/last/stocks/{symbol}
 - [ ] /v1/last_quote/stocks/{symbol}
 - [ ] /v1/open-close/{symbol}/{date}

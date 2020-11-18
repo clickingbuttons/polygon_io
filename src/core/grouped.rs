@@ -1,7 +1,8 @@
 extern crate serde_json;
 extern crate ureq;
 
-use super::{get_response, Candle};
+use super::{Candle};
+use crate::helpers::{get_response,make_param};
 use crate::client::Client;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
@@ -62,21 +63,13 @@ impl Client {
     adjusted: Option<bool>
   ) -> io::Result<GroupedResponse> {
     let uri = format!(
-      "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?apikey={}{}",
+      "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?{}apikey={}",
       self.api_uri,
       locale,
       market,
       date.format("%Y-%m-%d"),
-      self.key,
-      match adjusted {
-        Some(a) =>
-          if a {
-            "&unadjusted=false"
-          } else {
-            "&unadjusted=true"
-          },
-        None => ""
-      }
+      make_param("adjusted", adjusted),
+      self.key
     );
 
     let resp = get_response(&uri)?;
@@ -186,3 +179,4 @@ mod grouped {
     }
   }
 }
+

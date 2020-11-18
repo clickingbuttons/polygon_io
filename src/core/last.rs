@@ -1,8 +1,9 @@
 extern crate serde_json;
 extern crate ureq;
 
-use super::{get_response, Candle};
-use crate::client::Client;
+use super::{Candle};
+use crate::client::{Client};
+use crate::helpers::get_response;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
 

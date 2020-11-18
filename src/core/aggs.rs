@@ -1,7 +1,8 @@
 extern crate serde_json;
 extern crate ureq;
 
-use super::{get_response, Candle};
+use super::Candle;
+use crate::helpers::{get_response,make_param};
 use crate::client::Client;
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -29,12 +30,22 @@ pub enum Sort {
   Desc
 }
 
+impl ToString for Sort {
+  fn to_string(&self) -> String {
+    String::from(match self {
+      Sort::Asc => "asc",
+      Sort::Desc => "desc"
+    })
+  }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AggResponse {
   #[serde(rename(deserialize = "ticker"))]
   pub symbol: String,
+  #[serde(rename(deserialize = "queryCount"))]
   pub query_count: usize,
+  #[serde(rename(deserialize = "resultsCount"))]
   pub results_count: usize,
   pub adjusted: bool,
   pub results: Vec<Candle>,
@@ -64,23 +75,9 @@ impl Client {
       from.format("%Y-%m-%d"),
       to.format("%Y-%m-%d"),
       self.key,
-      match adjusted {
-        Some(a) =>
-          if a {
-            "&unadjusted=false"
-          } else {
-            "&unadjusted=true"
-          },
-        None => ""
-      },
-      match sort {
-        Some(s) => format!("&sort={:?}", s),
-        None => String::new()
-      },
-      match limit {
-        Some(l) => format!("&limit={:?}", l),
-        None => String::new()
-      }
+      make_param("adjusted", adjusted),
+      make_param("sort", sort),
+      make_param("limit", limit),
     );
     let resp = get_response(&uri)?;
     let mut resp = resp.into_json_deserialize::<AggResponse>()?;
@@ -107,6 +104,8 @@ impl Client {
       if candle.ts < min_ts {
         min_ts = candle.ts;
       }
+      // Add symbol
+      candle.symbol = resp.symbol.clone();
     }
 
     let to = to.clone() + Duration::days(1);
@@ -144,16 +143,18 @@ mod aggs {
   use std::io::ErrorKind;
 
   #[test]
-  fn aapl_2020_11_05() {
+  fn aapl() {
     let client = Client::new();
     let from = NaiveDate::from_ymd(2020, 11, 5);
     let to = NaiveDate::from_ymd(2020, 11, 5);
+    let sym = String::from("AAPL");
     let resp = client
-      .get_aggs("AAPL", 1, Timespan::Minute, from, to, None, None, None)
+      .get_aggs(&sym, 1, Timespan::Minute, from, to, None, None, None)
       .unwrap();
     assert_eq!(resp.results.len(), 941);
     assert_eq!(resp.results.len(), resp.results_count);
     assert_eq!(resp.results.len(), resp.query_count);
+    assert_eq!(resp.results[0].symbol, sym);
   }
 
   #[test]

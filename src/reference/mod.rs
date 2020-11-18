@@ -4,6 +4,7 @@ pub mod splits;
 pub mod tickers;
 pub mod types;
 pub mod markets;
+pub mod locales;
 
 use serde::{Deserialize, de, Serializer};
 use chrono::NaiveDate;

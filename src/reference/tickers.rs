@@ -2,7 +2,8 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::client::Client;
-use crate::core::get_response;
+use crate::helpers::get_response;
+use crate::helpers::make_param;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
 use super::*;
@@ -43,16 +44,6 @@ pub struct TickersResponse {
   pub tickers: Vec<Ticker>,
   // For debugging
   pub status: String,
-}
-
-fn make_param<T>(param_name: &str, param: Option<T>) -> String
-  where
-    T: ToString
-{
-  match param {
-    Some(p) => format!("&{}={}", param_name, p.to_string()),
-    None => String::new()
-  }
 }
 
 impl Client {

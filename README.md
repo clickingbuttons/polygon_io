@@ -10,11 +10,11 @@ Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in que
 - [x] /v2/aggs/grouped/locale/{locale}/market/{market}/{date}
 
 ### reference
-- [ ] /v2/reference/tickers
-- [ ] /v2/reference/types
+- [x] /v2/reference/tickers
+- [x] /v2/reference/types
 - [ ] /v1/meta/symbols/{symbol}/company
 - [ ] /v1/meta/symbols/{symbol}/news
-- [ ] /v2/reference/markets
+- [x] /v2/reference/markets
 - [ ] /v2/reference/locales
 - [x] /v2/reference/splits/{symbol}
 - [x] /v2/reference/dividends/{symbol}

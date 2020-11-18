@@ -16,15 +16,15 @@ Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in que
 - [ ] /v1/meta/symbols/{symbol}/news
 - [ ] /v2/reference/markets
 - [ ] /v2/reference/locales
-- 1 [x] /v2/reference/splits/{symbol}
-- 1 [x] /v2/reference/dividends/{symbol}
-- 2 [x] /v2/reference/financials/{symbol}
+- [x] /v2/reference/splits/{symbol}
+- [x] /v2/reference/dividends/{symbol}
+- [x] /v2/reference/financials/{symbol}
 - [ ] /v1/marketstatus/now
 - [ ] /v1/marketstatus/upcoming
 
 ### equities
 - [ ] /v1/meta/exchanges
-- 2 [ ] /v2/ticks/stocks/trades/{ticker}/{date}
+- [ ] /v2/ticks/stocks/trades/{ticker}/{date}
 - [ ] /v2/ticks/stocks/nbbo/{ticker}/{date}
 - [ ] /v1/last/stocks/{symbol}
 - [ ] /v1/last_quote/stocks/{symbol}

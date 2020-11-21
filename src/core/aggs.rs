@@ -2,14 +2,16 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::helpers::{get_response,make_params};
-use crate::client::Client;
+use crate::{
+  client::Client,
+  helpers::{get_response, make_params}
+};
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
-  fs::create_dir_all,
-  io::{self, Error, ErrorKind},
   collections::HashMap,
+  fs::create_dir_all,
+  io::{self, Error, ErrorKind}
 };
 
 static LOG_DIR_AGGS: &str = "logs/aggs";
@@ -59,7 +61,7 @@ pub struct AggsParams<'a> {
   pub params: HashMap<&'a str, String>
 }
 
-impl <'a> AggsParams<'a> {
+impl<'a> AggsParams<'a> {
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(3)
@@ -165,8 +167,7 @@ impl Client {
 #[cfg(test)]
 mod aggs {
   use super::Timespan;
-  use crate::client::Client;
-  use crate::core::aggs::AggsParams;
+  use crate::{client::Client, core::aggs::AggsParams};
   use chrono::NaiveDate;
   use std::io::ErrorKind;
 
@@ -192,14 +193,7 @@ mod aggs {
     let to = NaiveDate::from_ymd(2008, 12, 1);
     let params = AggsParams::new().with_limit(50_000).params;
     for _ in 0..10 {
-      match client.get_aggs(
-        "AAPL",
-        1,
-        Timespan::Minute,
-        from,
-        to,
-        Some(&params)
-      ) {
+      match client.get_aggs("AAPL", 1, Timespan::Minute, from, to, Some(&params)) {
         Ok(_v) => {}
         Err(e) => match e.kind() {
           ErrorKind::BrokenPipe => {
@@ -211,4 +205,3 @@ mod aggs {
     }
   }
 }
-

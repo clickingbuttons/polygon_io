@@ -78,4 +78,3 @@ pub struct Candle {
 pub struct CandleResponse {
   pub results: Vec<Candle>
 }
-

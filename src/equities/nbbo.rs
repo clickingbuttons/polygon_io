@@ -1,39 +1,43 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::helpers::{get_response,make_params};
-use crate::client::Client;
+use crate::{
+  client::Client,
+  helpers::{get_response, make_params}
+};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
-use std::io::{self, Error, ErrorKind};
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  io::{self, Error, ErrorKind}
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {
   #[serde(rename(deserialize = "t"))]
-  pub ts:             i64,
+  pub ts: i64,
   #[serde(rename(deserialize = "y"))]
   pub ts_participant: Option<i64>,
   #[serde(rename(deserialize = "f"))]
-  pub ts_trf:         Option<i64>,
+  pub ts_trf: Option<i64>,
   #[serde(default)]
-  pub symbol:         String,
+  pub symbol: String,
   #[serde(rename(deserialize = "x"))]
-  pub bid_exchange:       u32,
+  pub bid_exchange: u32,
   #[serde(rename(deserialize = "X"))]
-  pub ask_exchange:       u32,
+  pub ask_exchange: u32,
   #[serde(rename(deserialize = "s"))]
-  pub bid_lots:           u32,
+  pub bid_lots: u32,
   #[serde(rename(deserialize = "S"))]
-  pub ask_lots:           u32,
+  pub ask_lots: u32,
   //#[serde(rename(deserialize = "c"))]
   // pub conditions:     i32,
   #[serde(rename(deserialize = "p"))]
-  pub bid_price:          f32,
+  pub bid_price: f32,
   #[serde(rename(deserialize = "P"))]
-  pub ask_price:          f32,
+  pub ask_price: f32,
   #[serde(rename(deserialize = "z"))]
-  pub tape:           u32
+  pub tape: u32
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -65,7 +69,9 @@ impl<'a> NBBOsParams<'a> {
   }
 
   pub fn with_timestamp_limit(mut self, timestamp_limit: i64) -> Self {
-    self.params.insert("timestamp_limit", timestamp_limit.to_string());
+    self
+      .params
+      .insert("timestamp_limit", timestamp_limit.to_string());
     self
   }
 
@@ -131,8 +137,7 @@ impl Client {
 
 #[cfg(test)]
 mod nbbo {
-  use crate::client::Client;
-  use crate::equities::nbbo::NBBOsParams;
+  use crate::{client::Client, equities::nbbo::NBBOsParams};
   use chrono::NaiveDate;
 
   #[test]
@@ -141,11 +146,8 @@ mod nbbo {
     let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
     let params = NBBOsParams::new().with_limit(limit).params;
-    let nbbo = client
-      .get_nbbo("AAPL", date, Some(&params))
-      .unwrap();
+    let nbbo = client.get_nbbo("AAPL", date, Some(&params)).unwrap();
     assert_eq!(nbbo.results_count, limit);
     assert_eq!(nbbo.results.len(), limit);
   }
 }
-

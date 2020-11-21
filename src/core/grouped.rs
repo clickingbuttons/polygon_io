@@ -1,13 +1,17 @@
 extern crate serde_json;
 extern crate ureq;
 
-use super::{Candle};
-use crate::helpers::{get_response,make_params};
-use crate::client::Client;
+use super::Candle;
+use crate::{
+  client::Client,
+  helpers::{get_response, make_params}
+};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
-use std::io::{self, Error, ErrorKind};
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  io::{self, Error, ErrorKind}
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -59,13 +63,13 @@ pub struct GroupedParams<'a> {
   pub params: HashMap<&'a str, String>
 }
 
-impl <'a> GroupedParams<'a> {
+impl<'a> GroupedParams<'a> {
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(1)
     }
   }
-  
+
   pub fn with_unadjusted(mut self, unadjusted: bool) -> Self {
     self.params.insert("unadjusted", unadjusted.to_string());
     self
@@ -78,7 +82,7 @@ impl Client {
     locale: Locale,
     market: Market,
     date: NaiveDate,
-    params: Option<&HashMap<&str,String>>
+    params: Option<&HashMap<&str, String>>
   ) -> io::Result<GroupedResponse> {
     let uri = format!(
       "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?apikey={}{}",
@@ -200,4 +204,3 @@ mod grouped {
     }
   }
 }
-

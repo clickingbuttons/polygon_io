@@ -1,3 +1,2 @@
-pub mod trades;
 pub mod nbbo;
-
+pub mod trades;

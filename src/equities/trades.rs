@@ -1,33 +1,37 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::helpers::{get_response,make_params};
-use crate::client::Client;
+use crate::{
+  client::Client,
+  helpers::{get_response, make_params}
+};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
-use std::io::{self, Error, ErrorKind};
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  io::{self, Error, ErrorKind}
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
   #[serde(rename(deserialize = "t"))]
-  pub ts:             i64,
+  pub ts: i64,
   #[serde(rename(deserialize = "y"))]
   pub ts_participant: Option<i64>,
   #[serde(rename(deserialize = "f"))]
-  pub ts_trf:         Option<i64>,
+  pub ts_trf: Option<i64>,
   #[serde(default)]
-  pub symbol:         String,
+  pub symbol: String,
   #[serde(rename(deserialize = "x"))]
-  pub exchange:       u32,
+  pub exchange: u32,
   #[serde(rename(deserialize = "s"))]
-  pub size:           u32,
+  pub size: u32,
   // #[serde(rename(deserialize = "c"))]
   // pub conditions:     i32,
   #[serde(rename(deserialize = "p"))]
-  pub price:          f32,
+  pub price: f32,
   #[serde(rename(deserialize = "z"))]
-  pub tape:           u32
+  pub tape: u32
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -60,7 +64,9 @@ impl<'a> TradesParams<'a> {
   }
 
   pub fn with_timestamp_limit(mut self, timestamp_limit: i64) -> Self {
-    self.params.insert("timestamp_limit", timestamp_limit.to_string());
+    self
+      .params
+      .insert("timestamp_limit", timestamp_limit.to_string());
     self
   }
 
@@ -126,9 +132,8 @@ impl Client {
 
 #[cfg(test)]
 mod trades {
-  use crate::client::Client;
+  use crate::{client::Client, equities::trades::TradesParams};
   use chrono::NaiveDate;
-  use crate::equities::trades::TradesParams;
 
   #[test]
   fn works() {
@@ -136,11 +141,8 @@ mod trades {
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let limit = 500;
     let params = TradesParams::new().with_limit(limit).params;
-    let trades = client
-      .get_trades("AAPL", date, Some(&params))
-      .unwrap();
+    let trades = client.get_trades("AAPL", date, Some(&params)).unwrap();
     assert_eq!(trades.results_count, limit);
     assert_eq!(trades.results.len(), limit);
   }
 }
-

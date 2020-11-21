@@ -1,12 +1,18 @@
+use chrono::{DateTime, FixedOffset, NaiveDate};
+use serde::{de, Deserialize, Serializer};
+use std::{
+  collections::HashMap,
+  fmt,
+  io::{Error, ErrorKind}
+};
 use ureq::Response;
-use std::io::{Error, ErrorKind};
-use std::collections::HashMap;
-use serde::{Deserialize, de, Serializer};
-use chrono::{NaiveDate,DateTime,FixedOffset};
-use std::fmt;
 
 pub fn make_params(params: &HashMap<&str, String>) -> String {
-  params.iter().map(|(key, val)| format!("&{}={}", key, val)).collect::<Vec<String>>().join("")
+  params
+    .iter()
+    .map(|(key, val)| format!("&{}={}", key, val))
+    .collect::<Vec<String>>()
+    .join("")
 }
 
 pub fn get_response(uri: &str) -> std::io::Result<Response> {
@@ -57,11 +63,11 @@ pub fn option_string_to_naive_date<'de, D>(deserializer: D) -> Result<Option<Nai
 where
   D: de::Deserializer<'de>
 {
-    #[derive(Deserialize)]
-    struct Wrapper(#[serde(deserialize_with = "string_to_naive_date")] NaiveDate);
+  #[derive(Deserialize)]
+  struct Wrapper(#[serde(deserialize_with = "string_to_naive_date")] NaiveDate);
 
-    let v = Option::deserialize(deserializer)?;
-    Ok(v.map(|Wrapper(a)| a))
+  let v = Option::deserialize(deserializer)?;
+  Ok(v.map(|Wrapper(a)| a))
 }
 
 pub fn naive_date_to_string<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
@@ -71,7 +77,10 @@ where
   serializer.serialize_str(&date.format(POLYGON_DATE_FORMAT).to_string())
 }
 
-pub fn option_naive_date_to_string<S>(date: &Option<NaiveDate>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn option_naive_date_to_string<S>(
+  date: &Option<NaiveDate>,
+  serializer: S
+) -> Result<S::Ok, S::Error>
 where
   S: Serializer
 {
@@ -115,18 +124,23 @@ where
   serializer.serialize_str(&date.to_rfc3339())
 }
 
-pub fn option_string_to_datetime<'de, D>(deserializer: D) -> Result<Option<DateTime<FixedOffset>>, D::Error>
+pub fn option_string_to_datetime<'de, D>(
+  deserializer: D
+) -> Result<Option<DateTime<FixedOffset>>, D::Error>
 where
   D: de::Deserializer<'de>
 {
-    #[derive(Deserialize)]
-    struct Wrapper(#[serde(deserialize_with = "string_to_datetime")] DateTime<FixedOffset>);
+  #[derive(Deserialize)]
+  struct Wrapper(#[serde(deserialize_with = "string_to_datetime")] DateTime<FixedOffset>);
 
-    let v = Option::deserialize(deserializer)?;
-    Ok(v.map(|Wrapper(a)| a))
+  let v = Option::deserialize(deserializer)?;
+  Ok(v.map(|Wrapper(a)| a))
 }
 
-pub fn option_datetime_to_string<S>(date: &Option<DateTime<FixedOffset>>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn option_datetime_to_string<S>(
+  date: &Option<DateTime<FixedOffset>>,
+  serializer: S
+) -> Result<S::Ok, S::Error>
 where
   S: Serializer
 {
@@ -136,4 +150,3 @@ where
   };
   serializer.serialize_str(&string)
 }
-

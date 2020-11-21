@@ -1,48 +1,49 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
-use crate::helpers::*;
-use serde::{Deserialize, Serialize};
+use crate::{client::Client, helpers::*};
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Codes {
-  pub cik: Option<String>,
+  pub cik:     Option<String>,
   pub figiuid: Option<String>,
-  pub scfigi: Option<String>,
-  pub cfigi: Option<String>,
-  pub figi: Option<String>
+  pub scfigi:  Option<String>,
+  pub cfigi:   Option<String>,
+  pub figi:    Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ticker {
   #[serde(rename(deserialize = "ticker"))]
-  pub symbol: String,
-  pub name: String,
-  pub market: String,
-  pub locale: String,
-  pub r#type: Option<String>,
-  pub currency: String,
+  pub symbol:       String,
+  pub name:         String,
+  pub market:       String,
+  pub locale:       String,
+  pub r#type:       Option<String>,
+  pub currency:     String,
   pub primary_exch: String,
-  #[serde(deserialize_with="string_to_naive_date", serialize_with="naive_date_to_string")]
-  pub updated: NaiveDate,
-  pub codes: Option<Codes>
-  // Skip URL because it's broken
+  #[serde(
+    deserialize_with = "string_to_naive_date",
+    serialize_with = "naive_date_to_string"
+  )]
+  pub updated:      NaiveDate,
+  pub codes:        Option<Codes> // Skip URL because it's broken
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TickersResponse {
-  pub page: usize,
+  pub page:     usize,
   pub per_page: usize,
-  pub count: usize,
-  pub tickers: Vec<Ticker>,
+  pub count:    usize,
+  pub tickers:  Vec<Ticker>,
   // For debugging
-  pub status: String,
+  pub status:   String
 }
 
 pub struct TickersParams<'a> {
@@ -55,7 +56,7 @@ impl<'a> TickersParams<'a> {
       params: HashMap::with_capacity(8)
     }
   }
- 
+
   pub fn with_sort(mut self, sort: &str) -> Self {
     self.params.insert("sort", sort.to_string());
     self
@@ -98,7 +99,10 @@ impl<'a> TickersParams<'a> {
 }
 
 impl Client {
-  pub fn get_tickers(&self, params: Option<&HashMap<&str, String>>) -> std::io::Result<TickersResponse> {
+  pub fn get_tickers(
+    &self,
+    params: Option<&HashMap<&str, String>>
+  ) -> std::io::Result<TickersResponse> {
     let uri = format!(
       "{}/v2/reference/tickers?apikey={}{}",
       self.api_uri,
@@ -107,7 +111,7 @@ impl Client {
         Some(p) => make_params(p),
         None => String::new()
       }
-   );
+    );
 
     let resp = get_response(&uri)?;
     let resp = resp.into_json_deserialize::<TickersResponse>()?;
@@ -116,9 +120,13 @@ impl Client {
   }
 
   pub fn get_us_tickers(&self, page: usize) -> std::io::Result<TickersResponse> {
-    self.get_tickers(
-      Some(&TickersParams::new().with_locale("us").with_market("stocks").with_page(page).params)
-    )
+    self.get_tickers(Some(
+      &TickersParams::new()
+        .with_locale("us")
+        .with_market("stocks")
+        .with_page(page)
+        .params
+    ))
   }
 }
 
@@ -129,21 +137,16 @@ mod tickers {
   #[test]
   fn works() {
     let client = Client::new();
-    let resp = client
-      .get_tickers(None)
-      .unwrap();
+    let resp = client.get_tickers(None).unwrap();
     assert!(resp.tickers.len() == 50);
   }
 
   #[test]
   fn us_works() {
     let client = Client::new();
-    let resp = client
-      .get_us_tickers(1)
-      .unwrap();
+    let resp = client.get_us_tickers(1).unwrap();
     assert!(resp.tickers.len() == 50);
     assert_eq!(resp.tickers[0].market, String::from("STOCKS"));
     assert_eq!(resp.tickers[0].locale, String::from("US"));
   }
 }
-

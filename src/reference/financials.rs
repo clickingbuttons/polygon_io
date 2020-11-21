@@ -1,10 +1,9 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
-use crate::helpers::*;
-use serde::{Deserialize, Serialize};
+use crate::{client::Client, helpers::*};
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,13 +12,25 @@ pub struct Financial {
   #[serde(rename(deserialize = "ticker"))]
   pub symbol: String,
   pub period: String,
-  #[serde(deserialize_with="string_to_naive_date", serialize_with="naive_date_to_string")]
+  #[serde(
+    deserialize_with = "string_to_naive_date",
+    serialize_with = "naive_date_to_string"
+  )]
   pub calendar_date: NaiveDate,
-  #[serde(deserialize_with="string_to_naive_date", serialize_with="naive_date_to_string")]
+  #[serde(
+    deserialize_with = "string_to_naive_date",
+    serialize_with = "naive_date_to_string"
+  )]
   pub report_period: NaiveDate,
-  #[serde(deserialize_with="string_to_naive_date", serialize_with="naive_date_to_string")]
+  #[serde(
+    deserialize_with = "string_to_naive_date",
+    serialize_with = "naive_date_to_string"
+  )]
   pub updated: NaiveDate,
-  #[serde(deserialize_with="string_to_naive_date", serialize_with="naive_date_to_string")]
+  #[serde(
+    deserialize_with = "string_to_naive_date",
+    serialize_with = "naive_date_to_string"
+  )]
   pub date_key: NaiveDate,
   pub accumulated_other_comprehensive_income: i64,
   pub assets: i64,
@@ -253,7 +264,7 @@ impl Default for Financial {
       income_tax_expense: 0,
       tax_liabilities: 0,
       tangible_assets_book_value_per_share: 0.0,
-      working_capital: 0,
+      working_capital: 0
     }
   }
 }
@@ -262,19 +273,14 @@ impl Default for Financial {
 pub struct FinancialsResponse {
   pub results: Vec<Financial>,
   // For debugging
-  pub status: String,
+  pub status:  String
 }
 
 impl Client {
-  pub fn get_financials(
-    &self,
-    symbol: &str
-  ) -> std::io::Result<FinancialsResponse> {
+  pub fn get_financials(&self, symbol: &str) -> std::io::Result<FinancialsResponse> {
     let uri = format!(
       "{}/v2/reference/financials/{}?apikey={}",
-      self.api_uri,
-      symbol,
-      self.key
+      self.api_uri, symbol, self.key
     );
 
     let resp = get_response(&uri)?;
@@ -291,10 +297,7 @@ mod financials {
   #[test]
   fn works() {
     let client = Client::new();
-    let financials = client
-      .get_financials("AAPL")
-      .unwrap();
+    let financials = client.get_financials("AAPL").unwrap();
     assert!(financials.results.len() > 400);
   }
 }
-

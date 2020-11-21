@@ -1,9 +1,8 @@
 extern crate serde_json;
 extern crate ureq;
 
-use super::{Candle};
-use crate::client::{Client};
-use crate::helpers::get_response;
+use super::Candle;
+use crate::{client::Client, helpers::get_response};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
 
@@ -20,15 +19,10 @@ pub struct PrevResponse {
 }
 
 impl Client {
-  pub fn get_prev(
-    &self,
-    symbol: &str
-  ) -> io::Result<PrevResponse> {
+  pub fn get_prev(&self, symbol: &str) -> io::Result<PrevResponse> {
     let uri = format!(
       "{}/v2/aggs/ticker/{}/prev?apikey={}",
-      self.api_uri,
-      symbol,
-      self.key
+      self.api_uri, symbol, self.key
     );
 
     let resp = get_response(&uri)?;
@@ -36,7 +30,10 @@ impl Client {
     resp.uri = Some(uri);
 
     if resp.results.len() != 1 {
-      return Err(Error::new(ErrorKind::UnexpectedEof, format!("Results has length {} (expected 1)", resp.results.len())));
+      return Err(Error::new(
+        ErrorKind::UnexpectedEof,
+        format!("Results has length {} (expected 1)", resp.results.len())
+      ));
     }
 
     let is_equity = !symbol.contains(":");
@@ -59,9 +56,7 @@ mod prev {
   #[test]
   fn works() {
     let client = Client::new();
-    let prev = client
-      .get_prev("AAPL")
-      .unwrap();
+    let prev = client.get_prev("AAPL").unwrap();
     assert_eq!(prev.results.len(), 1);
   }
 }

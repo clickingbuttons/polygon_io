@@ -22,8 +22,10 @@ Currently Core endpoints and some v2 equities are implemented. PRs for more endp
 - [x] /v2/reference/splits/{symbol}
 - [x] /v2/reference/dividends/{symbol}
 - [x] /v2/reference/financials/{symbol}
-- [ ] /v1/marketstatus/now
-- [ ] /v1/marketstatus/upcoming
+
+### market status
+- [x] /v1/marketstatus/now
+- [x] /v1/marketstatus/upcoming
 
 ### equities
 - [ ] /v1/meta/exchanges

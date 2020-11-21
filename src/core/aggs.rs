@@ -190,14 +190,15 @@ mod aggs {
     let client = Client::new();
     let from = NaiveDate::from_ymd(2008, 11, 1);
     let to = NaiveDate::from_ymd(2008, 12, 1);
-    for _ in 0..100 {
+    let params = AggsParams::new().with_limit(50_000).params;
+    for _ in 0..10 {
       match client.get_aggs(
         "AAPL",
         1,
         Timespan::Minute,
         from,
         to,
-        Some(AggsParams::new().with_limit(50_000).params)
+        Some(&params)
       ) {
         Ok(_v) => {}
         Err(e) => match e.kind() {

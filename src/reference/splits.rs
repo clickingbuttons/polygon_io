@@ -2,10 +2,9 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::client::Client;
-use crate::helpers::get_response;
+use crate::helpers::*;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
-use super::*;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

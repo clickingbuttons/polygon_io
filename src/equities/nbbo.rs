@@ -140,8 +140,9 @@ mod nbbo {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
+    let params = NBBOsParams::new().with_limit(limit).params;
     let nbbo = client
-      .get_nbbo("AAPL", date, Some(NBBOsParams::new().with_limit(limit).params))
+      .get_nbbo("AAPL", date, Some(&params))
       .unwrap();
     assert_eq!(nbbo.results_count, limit);
     assert_eq!(nbbo.results.len(), limit);

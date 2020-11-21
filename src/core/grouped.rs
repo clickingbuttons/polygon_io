@@ -66,8 +66,8 @@ impl <'a> GroupedParams<'a> {
     }
   }
   
-  pub fn with_limit(mut self, limit: i32) -> Self {
-    self.params.insert("limit", limit.to_string());
+  pub fn with_unadjusted(mut self, unadjusted: bool) -> Self {
+    self.params.insert("unadjusted", unadjusted.to_string());
     self
   }
 }

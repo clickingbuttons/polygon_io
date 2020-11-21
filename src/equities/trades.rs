@@ -135,8 +135,9 @@ mod trades {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let limit = 500;
+    let params = TradesParams::new().with_limit(limit).params;
     let trades = client
-      .get_trades("AAPL", date, Some(TradesParams::new().with_limit(limit).params))
+      .get_trades("AAPL", date, Some(&params))
       .unwrap();
     assert_eq!(trades.results_count, limit);
     assert_eq!(trades.results.len(), limit);

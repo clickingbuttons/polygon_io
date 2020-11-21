@@ -1,13 +1,14 @@
 [package]
 name = "polygon_io"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["clickingbuttons"]
 edition = "2018"
 license = "MIT"
+description = "Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for equities. Built on ureq and chrono."
 
 [dependencies]
 chrono = "0.4"
-serde = "*"
-serde_json = "*"
+serde = "1.0.117"
+serde_json = "1.0.59"
 ureq = { version = "1.5.1", features = ["json"] }
 

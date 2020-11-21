@@ -2,13 +2,14 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::helpers::{get_response,make_param};
+use crate::helpers::{get_response,make_params};
 use crate::client::Client;
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
   fs::create_dir_all,
-  io::{self, Error, ErrorKind}
+  io::{self, Error, ErrorKind},
+  collections::HashMap,
 };
 
 static LOG_DIR_AGGS: &str = "logs/aggs";
@@ -24,7 +25,7 @@ pub enum Timespan {
   Year
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Sort {
   Asc,
   Desc
@@ -54,6 +55,33 @@ pub struct AggResponse {
   pub uri: Option<String>
 }
 
+pub struct AggsParams<'a> {
+  pub params: HashMap<&'a str, String>
+}
+
+impl <'a> AggsParams<'a> {
+  pub fn new() -> Self {
+    Self {
+      params: HashMap::with_capacity(3)
+    }
+  }
+
+  pub fn with_adjusted(mut self, adjusted: bool) -> Self {
+    self.params.insert("adjusted", adjusted.to_string());
+    self
+  }
+
+  pub fn with_sort(mut self, sort: Sort) -> Self {
+    self.params.insert("sort", sort.to_string());
+    self
+  }
+
+  pub fn with_limit(mut self, limit: i32) -> Self {
+    self.params.insert("limit", limit.to_string());
+    self
+  }
+}
+
 impl Client {
   pub fn get_aggs(
     &self,
@@ -62,12 +90,10 @@ impl Client {
     timespan: Timespan,
     from: NaiveDate,
     to: NaiveDate,
-    adjusted: Option<bool>,
-    sort: Option<Sort>,
-    limit: Option<i32>
+    params: Option<&HashMap<&str, String>>
   ) -> io::Result<AggResponse> {
     let uri = format!(
-      "{}/v2/aggs/ticker/{}/range/{}/{:?}/{}/{}?apikey={}{}{}{}",
+      "{}/v2/aggs/ticker/{}/range/{}/{:?}/{}/{}?apikey={}{}",
       self.api_uri,
       symbol,
       multiplier,
@@ -75,9 +101,10 @@ impl Client {
       from.format("%Y-%m-%d"),
       to.format("%Y-%m-%d"),
       self.key,
-      make_param("adjusted", adjusted),
-      make_param("sort", sort),
-      make_param("limit", limit),
+      match params {
+        Some(p) => make_params(p),
+        None => String::new()
+      }
     );
     let resp = get_response(&uri)?;
     let mut resp = resp.into_json_deserialize::<AggResponse>()?;
@@ -139,6 +166,7 @@ impl Client {
 mod aggs {
   use super::Timespan;
   use crate::client::Client;
+  use crate::core::aggs::AggsParams;
   use chrono::NaiveDate;
   use std::io::ErrorKind;
 
@@ -149,7 +177,7 @@ mod aggs {
     let to = NaiveDate::from_ymd(2020, 11, 5);
     let sym = String::from("AAPL");
     let resp = client
-      .get_aggs(&sym, 1, Timespan::Minute, from, to, None, None, None)
+      .get_aggs(&sym, 1, Timespan::Minute, from, to, None)
       .unwrap();
     assert_eq!(resp.results.len(), 941);
     assert_eq!(resp.results.len(), resp.results_count);
@@ -169,9 +197,7 @@ mod aggs {
         Timespan::Minute,
         from,
         to,
-        None,
-        None,
-        Some(50_000)
+        Some(AggsParams::new().with_limit(50_000).params)
       ) {
         Ok(_v) => {}
         Err(e) => match e.kind() {
@@ -184,3 +210,4 @@ mod aggs {
     }
   }
 }
+

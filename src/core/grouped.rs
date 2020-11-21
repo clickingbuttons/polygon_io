@@ -2,11 +2,12 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::{Candle};
-use crate::helpers::{get_response,make_param};
+use crate::helpers::{get_response,make_params};
 use crate::client::Client;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,22 +55,42 @@ pub enum Market {
   FX
 }
 
+pub struct GroupedParams<'a> {
+  pub params: HashMap<&'a str, String>
+}
+
+impl <'a> GroupedParams<'a> {
+  pub fn new() -> Self {
+    Self {
+      params: HashMap::with_capacity(1)
+    }
+  }
+  
+  pub fn with_limit(mut self, limit: i32) -> Self {
+    self.params.insert("limit", limit.to_string());
+    self
+  }
+}
+
 impl Client {
   pub fn get_grouped(
     &self,
     locale: Locale,
     market: Market,
     date: NaiveDate,
-    adjusted: Option<bool>
+    params: Option<&HashMap<&str,String>>
   ) -> io::Result<GroupedResponse> {
     let uri = format!(
-      "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?{}apikey={}",
+      "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?apikey={}{}",
       self.api_uri,
       locale,
       market,
       date.format("%Y-%m-%d"),
-      make_param("adjusted", adjusted),
-      self.key
+      self.key,
+      match params {
+        Some(p) => make_params(p),
+        None => String::new()
+      }
     );
 
     let resp = get_response(&uri)?;

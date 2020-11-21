@@ -1,11 +1,12 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::helpers::{get_response,make_param};
+use crate::helpers::{get_response,make_params};
 use crate::client::Client;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {
@@ -47,26 +48,55 @@ pub struct NBBOsResponse {
   pub uri: Option<String>
 }
 
+pub struct NBBOsParams<'a> {
+  pub params: HashMap<&'a str, String>
+}
+
+impl<'a> NBBOsParams<'a> {
+  pub fn new() -> Self {
+    Self {
+      params: HashMap::with_capacity(4)
+    }
+  }
+
+  pub fn with_timestamp(mut self, timestamp: i64) -> Self {
+    self.params.insert("timestamp", timestamp.to_string());
+    self
+  }
+
+  pub fn with_timestamp_limit(mut self, timestamp_limit: i64) -> Self {
+    self.params.insert("timestamp_limit", timestamp_limit.to_string());
+    self
+  }
+
+  pub fn with_reverse(mut self, reverse: bool) -> Self {
+    self.params.insert("reverse", reverse.to_string());
+    self
+  }
+
+  pub fn with_limit(mut self, limit: usize) -> Self {
+    self.params.insert("limit", limit.to_string());
+    self
+  }
+}
+
 impl Client {
   pub fn get_nbbo(
     &self,
     symbol: &str,
     date: NaiveDate,
-    timestamp: Option<i64>,
-    timestamp_limit: Option<i64>,
-    reverse: Option<bool>,
-    limit: Option<usize>
+    params: Option<&HashMap<&str, String>>
   ) -> io::Result<NBBOsResponse> {
     let uri = format!(
-      "{}/v2/ticks/stocks/nbbo/{}/{}?apikey={}{}{}{}{}",
+      "{}/v2/ticks/stocks/nbbo/{}/{}?apikey={}{}",
       self.api_uri,
       symbol,
       date.format("%Y-%m-%d"),
       self.key,
-      make_param("timestamp", timestamp),
-      make_param("timestamp_limit", timestamp_limit),
-      make_param("reverse", reverse),
-      make_param("limit", limit)
+      match params {
+        Some(p) => make_params(p),
+        None => String::new()
+      }
     );
 
     let resp = get_response(&uri)?;
@@ -102,6 +132,7 @@ impl Client {
 #[cfg(test)]
 mod nbbo {
   use crate::client::Client;
+  use crate::equities::nbbo::NBBOsParams;
   use chrono::NaiveDate;
 
   #[test]
@@ -110,9 +141,10 @@ mod nbbo {
     let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
     let nbbo = client
-      .get_nbbo("AAPL", date, None, None, None, Some(limit))
+      .get_nbbo("AAPL", date, Some(NBBOsParams::new().with_limit(limit).params))
       .unwrap();
     assert_eq!(nbbo.results_count, limit);
     assert_eq!(nbbo.results.len(), limit);
   }
 }
+

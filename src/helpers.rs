@@ -1,14 +1,9 @@
 use ureq::Response;
 use std::io::{Error, ErrorKind};
+use std::collections::HashMap;
 
-pub fn make_param<T>(param_name: &str, param: Option<T>) -> String
-  where
-    T: ToString
-{
-  match param {
-    Some(p) => format!("&{}={}", param_name, p.to_string()),
-    None => String::new()
-  }
+pub fn make_params(params: &HashMap<&str, String>) -> String {
+  params.iter().map(|(key, val)| format!("&{}={}", key, val)).collect::<Vec<String>>().join("")
 }
 
 pub fn get_response(uri: &str) -> std::io::Result<Response> {

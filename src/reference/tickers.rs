@@ -3,9 +3,10 @@ extern crate ureq;
 
 use crate::client::Client;
 use crate::helpers::get_response;
-use crate::helpers::make_param;
+use crate::helpers::make_params;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
+use std::collections::HashMap;
 use super::*;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,31 +47,69 @@ pub struct TickersResponse {
   pub status: String,
 }
 
+pub struct TickersParams<'a> {
+  pub params: HashMap<&'a str, String>
+}
+
+impl<'a> TickersParams<'a> {
+  pub fn new() -> Self {
+    Self {
+      params: HashMap::with_capacity(8)
+    }
+  }
+ 
+  pub fn with_sort(mut self, sort: &str) -> Self {
+    self.params.insert("sort", sort.to_string());
+    self
+  }
+
+  pub fn with_type(mut self, r#type: &str) -> Self {
+    self.params.insert("type", r#type.to_string());
+    self
+  }
+
+  pub fn with_market(mut self, market: &str) -> Self {
+    self.params.insert("sort", market.to_string());
+    self
+  }
+
+  pub fn with_locale(mut self, locale: &str) -> Self {
+    self.params.insert("locale", locale.to_string());
+    self
+  }
+
+  pub fn with_search(mut self, search: &str) -> Self {
+    self.params.insert("search", search.to_string());
+    self
+  }
+
+  pub fn with_perpage(mut self, perpage: usize) -> Self {
+    self.params.insert("perpage", perpage.to_string());
+    self
+  }
+
+  pub fn with_page(mut self, page: usize) -> Self {
+    self.params.insert("page", page.to_string());
+    self
+  }
+
+  pub fn with_active(mut self, active: bool) -> Self {
+    self.params.insert("active", active.to_string());
+    self
+  }
+}
+
 impl Client {
-  pub fn get_tickers(
-    &self,
-    sort: Option<&str>,
-    r#type: Option<&str>,
-    market: Option<&str>,
-    locale: Option<&str>,
-    search: Option<&str>,
-    perpage: Option<usize>,
-    page: Option<usize>,
-    active: Option<bool>
-  ) -> std::io::Result<TickersResponse> {
+  pub fn get_tickers(&self, params: Option<&HashMap<&str, String>>) -> std::io::Result<TickersResponse> {
     let uri = format!(
-      "{}/v2/reference/tickers?apikey={}{}{}{}{}{}{}{}{}",
+      "{}/v2/reference/tickers?apikey={}{}",
       self.api_uri,
       self.key,
-      make_param("sort", sort),
-      make_param("type", r#type),
-      make_param("market", market),
-      make_param("locale", locale),
-      make_param("search", search),
-      make_param("perpage", perpage),
-      make_param("page", page),
-      make_param("active", active)
-    );
+      match params {
+        Some(p) => make_params(p),
+        None => String::new()
+      }
+   );
 
     let resp = get_response(&uri)?;
     let resp = resp.into_json_deserialize::<TickersResponse>()?;
@@ -79,7 +118,9 @@ impl Client {
   }
 
   pub fn get_us_tickers(&self, page: usize) -> std::io::Result<TickersResponse> {
-    self.get_tickers(None, None, Some("stocks"), Some("us"), None, None, Some(page), None)
+    self.get_tickers(
+      Some(&TickersParams::new().with_locale("us").with_market("stocks").with_page(page).params)
+    )
   }
 }
 
@@ -91,7 +132,7 @@ mod tickers {
   fn works() {
     let client = Client::new();
     let resp = client
-      .get_tickers(None, None, None, None, None, None, None, None)
+      .get_tickers(None)
       .unwrap();
     assert!(resp.tickers.len() == 50);
   }

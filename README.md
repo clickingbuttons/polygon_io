@@ -1,6 +1,6 @@
 # polygon_io
 
-Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for equities. Built on ureq and chrono.
+Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for US equities. Built on ureq and chrono.
 
 Currently not documented and imports are a little wonky. These may be fixed in a future breaking change release.
 

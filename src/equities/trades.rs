@@ -6,32 +6,73 @@ use crate::{
   helpers::{get_response, make_params}
 };
 use chrono::{NaiveDate, NaiveDateTime};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de, de::SeqAccess};
 use std::{
   collections::HashMap,
-  io::{self, Error, ErrorKind}
+  io::{self, Error, ErrorKind},
+  fmt
 };
+
+fn to_conditions<'de, D>(deserializer: D) -> Result<i64, D::Error>
+where
+  D: de::Deserializer<'de>
+{
+  struct JsonNumberArrVisitor;
+
+  impl<'de> de::Visitor<'de> for JsonNumberArrVisitor {
+    type Value = i64;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+      formatter.write_str("an array of u32")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+      A: SeqAccess<'de>
+    {
+      let mut conditions: [i64; 4] = [
+        seq.next_element()?.unwrap_or(0),
+        seq.next_element()?.unwrap_or(0),
+        seq.next_element()?.unwrap_or(0),
+        seq.next_element()?.unwrap_or(0),
+      ];
+      conditions.sort();
+      if seq.next_element::<i64>()?.is_some() {
+        return Err(de::Error::custom("trades must have 4 or less conditions"));
+      }
+      let mut res: i64 = 0;
+      for (i, c) in conditions.iter().enumerate() {
+        if *c > 512 {
+          return Err(de::Error::custom(&format!("condition {} should be < 512", *c)));
+        }
+        res |= c << (8 * i);
+      }
+      Ok(res)
+    }
+  }
+  deserializer.deserialize_any(JsonNumberArrVisitor)
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
   #[serde(rename(deserialize = "t"))]
   pub ts: i64,
-  #[serde(rename(deserialize = "y"))]
-  pub ts_participant: Option<i64>,
-  #[serde(rename(deserialize = "f"))]
-  pub ts_trf: Option<i64>,
+  // #[serde(rename(deserialize = "y"))]
+  // pub ts_participant: Option<i64>,
+  // #[serde(rename(deserialize = "f"))]
+  // pub ts_trf: Option<i64>,
   #[serde(default)]
   pub symbol: String,
   #[serde(rename(deserialize = "x"))]
-  pub exchange: u32,
+  pub exchange: u8,
   #[serde(rename(deserialize = "s"))]
   pub size: u32,
-  // #[serde(rename(deserialize = "c"))]
-  // pub conditions:     i32,
+  #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
+  pub conditions: i64,
   #[serde(rename(deserialize = "p"))]
   pub price: f32,
   #[serde(rename(deserialize = "z"))]
-  pub tape: u32
+  pub tape: u8
 }
 
 #[derive(Debug, Deserialize, Serialize)]

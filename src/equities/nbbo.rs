@@ -116,7 +116,7 @@ impl Client {
     // Polygon returns the exchange opening time in nanoseconds since epoch
     for row in resp.results.iter_mut() {
       // Only US equities are at "stocks" endpoint
-      row.ts += 5 * 60 * 60 * 1_000_000_000;
+      row.ts -= 5 * 60 * 60 * 1_000_000_000;
       if NaiveDateTime::from_timestamp(row.ts / 1_000_000_000, 0).date() != date {
         return Err(Error::new(
           ErrorKind::BrokenPipe,

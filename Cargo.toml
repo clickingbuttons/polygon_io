@@ -1,6 +1,6 @@
 [package]
 name = "polygon_io"
-version = "0.0.5"
+version = "0.0.7"
 authors = ["clickingbuttons"]
 edition = "2018"
 license = "MIT"

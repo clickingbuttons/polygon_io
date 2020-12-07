@@ -68,8 +68,8 @@ impl<'a> AggsParams<'a> {
     }
   }
 
-  pub fn with_adjusted(mut self, adjusted: bool) -> Self {
-    self.params.insert("unadjusted", (!adjusted).to_string());
+  pub fn with_unadjusted(mut self, unadjusted: bool) -> Self {
+    self.params.insert("unadjusted", unadjusted.to_string());
     self
   }
 
@@ -192,7 +192,7 @@ mod aggs {
     let from = NaiveDate::from_ymd(2004, 1, 1);
     let to = NaiveDate::from_ymd(2020, 2, 1);
     let sym = String::from("MAC");
-    let params = AggsParams::new().with_adjusted(false).params;
+    let params = AggsParams::new().with_unadjusted(true).params;
     client.get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params)).unwrap();
   }
 

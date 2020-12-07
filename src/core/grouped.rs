@@ -85,10 +85,10 @@ impl Client {
     params: Option<&HashMap<&str, String>>
   ) -> io::Result<GroupedResponse> {
     let uri = format!(
-      "{}/v2/aggs/grouped/locale/{:?}/market/{:?}/{}?apikey={}{}",
+      "{}/v2/aggs/grouped/locale/{}/market/{}/{}?apikey={}{}",
       self.api_uri,
-      locale,
-      market,
+      format!("{:?}", locale).to_lowercase(),
+      format!("{:?}", market).to_lowercase(),
       date.format("%Y-%m-%d"),
       self.key,
       match params {

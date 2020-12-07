@@ -95,11 +95,11 @@ impl Client {
     params: Option<&HashMap<&str, String>>
   ) -> io::Result<AggResponse> {
     let uri = format!(
-      "{}/v2/aggs/ticker/{}/range/{}/{:?}/{}/{}?apikey={}{}",
+      "{}/v2/aggs/ticker/{}/range/{}/{}/{}/{}?apikey={}{}",
       self.api_uri,
       symbol,
       multiplier,
-      timespan,
+      format!("{:?}", timespan).to_lowercase(),
       from.format("%Y-%m-%d"),
       to.format("%Y-%m-%d"),
       self.key,

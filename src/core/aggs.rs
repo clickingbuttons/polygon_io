@@ -69,7 +69,7 @@ impl<'a> AggsParams<'a> {
   }
 
   pub fn with_adjusted(mut self, adjusted: bool) -> Self {
-    self.params.insert("adjusted", adjusted.to_string());
+    self.params.insert("unadjusted", (!adjusted).to_string());
     self
   }
 
@@ -184,6 +184,16 @@ mod aggs {
     assert_eq!(resp.results.len(), resp.results_count);
     assert_eq!(resp.results.len(), resp.query_count);
     assert_eq!(resp.results[0].symbol, sym);
+  }
+
+  #[test]
+  fn mac() {
+    let client = Client::new();
+    let from = NaiveDate::from_ymd(2004, 1, 1);
+    let to = NaiveDate::from_ymd(2020, 2, 1);
+    let sym = String::from("MAC");
+    let params = AggsParams::new().with_adjusted(false).params;
+    client.get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params)).unwrap();
   }
 
   #[test]

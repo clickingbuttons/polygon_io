@@ -76,5 +76,6 @@ pub struct Candle {
 
 #[derive(Deserialize)]
 pub struct CandleResponse {
+  #[serde(default)] // On 2020-12-07 started being omitted instead of empty
   pub results: Vec<Candle>
 }

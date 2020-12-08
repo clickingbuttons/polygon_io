@@ -51,6 +51,7 @@ pub struct AggResponse {
   #[serde(rename(deserialize = "resultsCount"))]
   pub results_count: usize,
   pub adjusted: bool,
+  #[serde(default)] // On 2020-12-07 started being omitted instead of empty
   pub results: Vec<Candle>,
   // For debugging
   pub request_id: String,
@@ -212,6 +213,19 @@ mod aggs {
           _ => {}
         }
       };
+    }
+  }
+
+  #[test]
+  fn empty_results() {
+    let client = Client::new();
+    let from = NaiveDate::from_ymd(2004, 3, 1);
+    let to = NaiveDate::from_ymd(2004, 3, 31);
+    let sym = String::from("CINpJ");
+    let params = AggsParams::new().params;
+    match client.get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params)) {
+      Ok(_) => panic!("CINpJ should not have agg1m in 2004-03"),
+      Err(e) => assert_eq!(e.kind(), ErrorKind::UnexpectedEof)
     }
   }
 }

@@ -12,6 +12,7 @@ pub struct PrevResponse {
   pub query_count: usize,
   pub results_count: usize,
   pub adjusted: bool,
+  #[serde(default)] // On 2020-12-07 started being omitted instead of empty
   pub results: Vec<Candle>,
   // For debugging
   pub status: String,

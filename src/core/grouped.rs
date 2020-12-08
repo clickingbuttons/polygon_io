@@ -19,6 +19,7 @@ pub struct GroupedResponse {
   pub query_count: usize,
   pub results_count: usize,
   pub adjusted: bool,
+  #[serde(default)] // On 2020-12-07 started being omitted instead of empty
   pub results: Vec<Candle>,
   // For debugging
   pub status: String,
@@ -130,6 +131,7 @@ mod grouped {
   use super::{Locale, Market};
   use crate::client::Client;
   use chrono::NaiveDate;
+  use std::io::ErrorKind;
 
   #[test]
   fn start() {
@@ -201,6 +203,16 @@ mod grouped {
         }
       }
       assert!(!missing_vwap);
+    }
+  }
+
+  #[test]
+  fn empty_results() {
+    let client = Client::new();
+    let date = NaiveDate::from_ymd(2004, 1, 1);
+    match client.get_grouped(Locale::US, Market::Stocks, date, None) {
+      Ok(_) => panic!("CINpJ should not have agg1m in 2004-03"),
+      Err(e) => assert_eq!(e.kind(), ErrorKind::UnexpectedEof)
     }
   }
 }

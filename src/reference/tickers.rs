@@ -27,7 +27,7 @@ pub struct Ticker {
   pub locale:       String,
   pub r#type:       Option<String>,
   pub currency:     String,
-  pub primary_exch: String,
+  pub primary_exch: Option<String>,
   #[serde(
     deserialize_with = "string_to_naive_date",
     serialize_with = "naive_date_to_string"
@@ -44,7 +44,7 @@ pub struct TickerVx {
   pub name:         String,
   pub market:       String,
   pub locale:       String,
-  pub primary_exchange: String,
+  pub primary_exchange: Option<String>,
   pub r#type:       Option<String>,
   pub active:       bool,
   pub currency_name:     String,
@@ -79,7 +79,7 @@ pub struct TickersResponse {
 pub struct TickersResponseVx {
   pub results:  Vec<TickerVx>,
   pub count: usize,
-  pub next_page_path: String,
+  pub next_page_path: Option<String>,
   // For debugging
   pub status:   String,
   pub request_id: String
@@ -126,6 +126,8 @@ impl<'a> TickersParamsVx<'a> {
   with_param!(sort, &str);
   with_param!(order, &str);
   with_param!(limit, usize);
+  // Undocumented but appears in next_page_path
+  with_param!(page_marker, &str);
 }
 
 impl Client {
@@ -178,24 +180,59 @@ impl Client {
 
     Ok(resp)
   }
+
+  pub fn get_all_tickers_vx(
+    &self,
+    date: NaiveDate
+  ) -> std::io::Result<Vec<TickerVx>> {
+    let limit: usize = 500;
+    // Use default params since next_page_path does as well
+    let mut params = TickersParamsVx::new()
+      .limit(limit)
+      .order("asc")
+      .sort("ticker")
+      .date(&date.format("%Y-%m-%d").to_string());
+    let mut res = Vec::<TickerVx>::new();
+    loop {
+      let page = self.get_tickers_vx(Some(&params.params))?;
+      res.extend(page.results.into_iter());
+      if page.next_page_path.is_none() {
+        break;
+      }
+      let path = page.next_page_path.unwrap();
+      let param_name = "page_marker=";
+      let marker_start: usize = path.find(param_name).unwrap_or_else(|| {
+        panic!("No page marker in {}", path);
+      });
+      let marker_end = match path[marker_start..].find("&") {
+        Some(i) => marker_start + i,
+        None => path.len()
+      };
+      let marker = path[marker_start + param_name.len()..marker_end].to_string();
+      params = params.page_marker(&marker);
+    }
+
+    Ok(res)
+  }
 }
 
 #[cfg(test)]
 mod tickers {
+  use chrono::NaiveDate;
   use crate::client::Client;
 
   #[test]
   fn works() {
     let client = Client::new();
     let resp = client.get_tickers(None).unwrap();
-    assert!(resp.tickers.len() == 50);
+    assert_eq!(resp.tickers.len(), 50);
   }
 
   #[test]
   fn us_works() {
     let client = Client::new();
     let resp = client.get_us_tickers(1).unwrap();
-    assert!(resp.tickers.len() == 50);
+    assert_eq!(resp.tickers.len(), 50);
     assert_eq!(resp.tickers[0].market, String::from("STOCKS"));
     assert_eq!(resp.tickers[0].locale, String::from("US"));
   }
@@ -204,6 +241,13 @@ mod tickers {
   fn works_vx() {
     let client = Client::new();
     let resp = client.get_tickers_vx(None).unwrap();
-    assert!(resp.results.len() == 100);
+    assert_eq!(resp.results.len(), 100);
+  }
+
+  #[test]
+  fn works_vx_day() {
+    let client = Client::new();
+    let results = client.get_all_tickers_vx(NaiveDate::from_ymd(2004, 01, 02)).unwrap();
+    assert_eq!(results.len(), 8161);
   }
 }

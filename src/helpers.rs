@@ -10,7 +10,7 @@ use ureq::Response;
 pub fn make_params(params: &HashMap<&str, String>) -> String {
   params
     .iter()
-    .map(|(key, val)| format!("&{}={}", key.to_lowercase(), val.to_lowercase()))
+    .map(|(key, val)| format!("&{}={}", key.to_lowercase(), val))
     .collect::<Vec<String>>()
     .join("")
 }

@@ -3,7 +3,8 @@ extern crate ureq;
 
 use crate::{
   client::Client,
-  helpers::{get_response, make_params}
+  helpers::{get_response, make_params},
+  with_param
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{de, de::SeqAccess, Deserialize, Serialize};
@@ -103,28 +104,11 @@ impl<'a> TradesParams<'a> {
       params: HashMap::with_capacity(4)
     }
   }
-
-  pub fn with_timestamp(mut self, timestamp: i64) -> Self {
-    self.params.insert("timestamp", timestamp.to_string());
-    self
-  }
-
-  pub fn with_timestamp_limit(mut self, timestamp_limit: i64) -> Self {
-    self
-      .params
-      .insert("timestamp_limit", timestamp_limit.to_string());
-    self
-  }
-
-  pub fn with_reverse(mut self, reverse: bool) -> Self {
-    self.params.insert("reverse", reverse.to_string());
-    self
-  }
-
-  pub fn with_limit(mut self, limit: usize) -> Self {
-    self.params.insert("limit", limit.to_string());
-    self
-  }
+  
+  with_param!(timestamp, i64);
+  with_param!(timestamp_limit, i64);
+  with_param!(reverse, bool);
+  with_param!(limit, usize);
 }
 
 const EST_OFFSET: i64 = 5 * 60 * 60 * 1_000_000_000;
@@ -181,7 +165,7 @@ impl Client {
   // This method overcomes that by filtering the "q"s from the last page on the next page.
   pub fn get_all_trades(&self, symbol: &str, date: NaiveDate) -> io::Result<Vec<Trade>> {
     let limit: usize = 50_000;
-    let mut params = TradesParams::new().with_limit(limit);
+    let mut params = TradesParams::new().limit(limit);
     let mut res = Vec::<Trade>::new();
     let mut repeated_uids = Vec::<u64>::new();
     loop {
@@ -201,7 +185,7 @@ impl Client {
           .filter(|trade| trade.ts == page_last_ts)
           .map(|trade| trade.uid)
           .collect::<Vec<_>>();
-        params = params.with_timestamp(page_last_ts + EST_OFFSET);
+        params = params.timestamp(page_last_ts + EST_OFFSET);
       }
     }
 
@@ -230,7 +214,7 @@ mod trades {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let limit = 500;
-    let params = TradesParams::new().with_limit(limit).params;
+    let params = TradesParams::new().limit(limit).params;
     let trades = client.get_trades("AAPL", date, Some(&params)).unwrap();
     assert_eq!(trades.results_count, limit);
     assert_eq!(trades.results.len(), limit);

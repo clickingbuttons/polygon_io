@@ -4,7 +4,8 @@ extern crate ureq;
 use super::Candle;
 use crate::{
   client::Client,
-  helpers::{get_response, make_params}
+  helpers::{get_response, make_params},
+  with_param
 };
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -25,21 +26,6 @@ pub enum Timespan {
   Month,
   Quarter,
   Year
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Sort {
-  Asc,
-  Desc
-}
-
-impl ToString for Sort {
-  fn to_string(&self) -> String {
-    String::from(match self {
-      Sort::Asc => "asc",
-      Sort::Desc => "desc"
-    })
-  }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -69,20 +55,9 @@ impl<'a> AggsParams<'a> {
     }
   }
 
-  pub fn with_unadjusted(mut self, unadjusted: bool) -> Self {
-    self.params.insert("unadjusted", unadjusted.to_string());
-    self
-  }
-
-  pub fn with_sort(mut self, sort: Sort) -> Self {
-    self.params.insert("sort", sort.to_string());
-    self
-  }
-
-  pub fn with_limit(mut self, limit: i32) -> Self {
-    self.params.insert("limit", limit.to_string());
-    self
-  }
+  with_param!(unadjusted, bool);
+  with_param!(sort, &str);
+  with_param!(limit, i32);
 }
 
 impl Client {
@@ -193,7 +168,7 @@ mod aggs {
     let from = NaiveDate::from_ymd(2004, 1, 1);
     let to = NaiveDate::from_ymd(2020, 2, 1);
     let sym = String::from("MAC");
-    let params = AggsParams::new().with_unadjusted(true).params;
+    let params = AggsParams::new().unadjusted(true).params;
     client.get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params)).unwrap();
   }
 
@@ -202,7 +177,7 @@ mod aggs {
     let client = Client::new();
     let from = NaiveDate::from_ymd(2008, 11, 1);
     let to = NaiveDate::from_ymd(2008, 12, 1);
-    let params = AggsParams::new().with_limit(50_000).params;
+    let params = AggsParams::new().limit(50_000).params;
     for _ in 0..10 {
       match client.get_aggs("AAPL", 1, Timespan::Minute, from, to, Some(&params)) {
         Ok(_v) => {}

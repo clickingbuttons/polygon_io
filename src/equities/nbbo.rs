@@ -3,7 +3,8 @@ extern crate ureq;
 
 use crate::{
   client::Client,
-  helpers::{get_response, make_params}
+  helpers::{get_response, make_params},
+  with_param
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
@@ -63,27 +64,10 @@ impl<'a> NBBOsParams<'a> {
     }
   }
 
-  pub fn with_timestamp(mut self, timestamp: i64) -> Self {
-    self.params.insert("timestamp", timestamp.to_string());
-    self
-  }
-
-  pub fn with_timestamp_limit(mut self, timestamp_limit: i64) -> Self {
-    self
-      .params
-      .insert("timestamp_limit", timestamp_limit.to_string());
-    self
-  }
-
-  pub fn with_reverse(mut self, reverse: bool) -> Self {
-    self.params.insert("reverse", reverse.to_string());
-    self
-  }
-
-  pub fn with_limit(mut self, limit: usize) -> Self {
-    self.params.insert("limit", limit.to_string());
-    self
-  }
+  with_param!(timestamp, i64);
+  with_param!(timestamp_limit, i64);
+  with_param!(reverse, bool);
+  with_param!(limit, usize);
 }
 
 impl Client {
@@ -145,7 +129,7 @@ mod nbbo {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
-    let params = NBBOsParams::new().with_limit(limit).params;
+    let params = NBBOsParams::new().limit(limit).params;
     let nbbo = client.get_nbbo("AAPL", date, Some(&params)).unwrap();
     assert_eq!(nbbo.results_count, limit);
     assert_eq!(nbbo.results.len(), limit);

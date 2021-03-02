@@ -4,7 +4,8 @@ extern crate ureq;
 use super::Candle;
 use crate::{
   client::Client,
-  helpers::{get_response, make_params}
+  helpers::{get_response, make_params},
+  with_param
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
@@ -71,10 +72,7 @@ impl<'a> GroupedParams<'a> {
     }
   }
 
-  pub fn with_unadjusted(mut self, unadjusted: bool) -> Self {
-    self.params.insert("unadjusted", unadjusted.to_string());
-    self
-  }
+  with_param!(unadjusted, bool);
 }
 
 impl Client {
@@ -128,7 +126,7 @@ impl Client {
 
 #[cfg(test)]
 mod grouped {
-  use super::{Locale, Market};
+  use super::{Locale, Market, GroupedParams};
   use crate::client::Client;
   use chrono::NaiveDate;
   use std::io::ErrorKind;
@@ -137,8 +135,9 @@ mod grouped {
   fn start() {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
+    let params = GroupedParams::new().unadjusted(true).params;
     let grouped = client
-      .get_grouped(Locale::US, Market::Stocks, date, None)
+      .get_grouped(Locale::US, Market::Stocks, date, Some(&params))
       .unwrap();
     assert_eq!(grouped.query_count, grouped.results_count);
     assert_eq!(grouped.query_count, 7670);
@@ -149,9 +148,10 @@ mod grouped {
   fn no_bad_ranges() {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
+    let params = GroupedParams::new().unadjusted(true).params;
     for _ in 0..50 {
       client
-        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .get_grouped(Locale::US, Market::Stocks, date, Some(&params))
         .unwrap();
     }
   }
@@ -166,9 +166,10 @@ mod grouped {
       NaiveDate::from_ymd(2020, 04, 13),
       NaiveDate::from_ymd(2020, 04, 14),
     ];
+    let params = GroupedParams::new().unadjusted(true).params;
     for date in bad_dates {
       let grouped = client
-        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .get_grouped(Locale::US, Market::Stocks, date, Some(&params))
         .unwrap();
       let mut has_bad_ticker = false;
       for candle in grouped.results {
@@ -191,9 +192,10 @@ mod grouped {
       NaiveDate::from_ymd(2020, 04, 13),
       NaiveDate::from_ymd(2020, 04, 14),
     ];
+    let params = GroupedParams::new().unadjusted(true).params;
     for date in bad_dates {
       let grouped = client
-        .get_grouped(Locale::US, Market::Stocks, date, None)
+        .get_grouped(Locale::US, Market::Stocks, date, Some(&params))
         .unwrap();
       let mut missing_vwap = false;
       for candle in grouped.results {
@@ -210,7 +212,8 @@ mod grouped {
   fn empty_results() {
     let client = Client::new();
     let date = NaiveDate::from_ymd(2004, 1, 1);
-    match client.get_grouped(Locale::US, Market::Stocks, date, None) {
+    let params = GroupedParams::new().unadjusted(true).params;
+    match client.get_grouped(Locale::US, Market::Stocks, date, Some(&params)) {
       Ok(_) => panic!("CINpJ should not have agg1m in 2004-03"),
       Err(e) => assert_eq!(e.kind(), ErrorKind::UnexpectedEof)
     }

@@ -150,3 +150,14 @@ where
   };
   serializer.serialize_str(&string)
 }
+
+#[macro_export]
+macro_rules! with_param {
+  ($param:ident, $_type: ty) => {
+    pub fn $param(mut self, $param: $_type) -> Self {
+      self.params.insert(stringify!($param), $param.to_string());
+      self
+    }
+  }
+}
+

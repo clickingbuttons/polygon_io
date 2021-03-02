@@ -2,7 +2,8 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::{client::Client, helpers::*};
-use chrono::NaiveDate;
+use crate::with_param;
+use chrono::{NaiveDate, DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -32,7 +33,35 @@ pub struct Ticker {
     serialize_with = "naive_date_to_string"
   )]
   pub updated:      NaiveDate,
-  pub codes:        Option<Codes> // Skip URL because it's broken
+  pub codes:        Option<Codes>
+  // Skip URL because it's broken
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TickerVx {
+  #[serde(rename(deserialize = "ticker"))]
+  pub symbol:       String,
+  pub name:         String,
+  pub market:       String,
+  pub locale:       String,
+  pub primary_exchange: String,
+  pub r#type:       Option<String>,
+  pub active:       bool,
+  pub currency_name:     String,
+  pub cik:     Option<String>,
+  pub composite_figi:     Option<String>,
+  pub share_class_figi:     Option<String>,
+  #[serde(
+    deserialize_with = "string_to_datetime",
+    serialize_with = "datetime_to_string"
+  )]
+  pub last_updated_utc:      DateTime<FixedOffset>,
+  #[serde(
+    deserialize_with = "option_string_to_datetime",
+    serialize_with = "option_datetime_to_string",
+    default
+  )]
+  pub delisted_utc:      Option<DateTime<FixedOffset>>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,6 +75,16 @@ pub struct TickersResponse {
   pub status:   String
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TickersResponseVx {
+  pub results:  Vec<TickerVx>,
+  pub count: usize,
+  pub next_page_path: String,
+  // For debugging
+  pub status:   String,
+  pub request_id: String
+}
+
 pub struct TickersParams<'a> {
   pub params: HashMap<&'a str, String>
 }
@@ -57,45 +96,36 @@ impl<'a> TickersParams<'a> {
     }
   }
 
-  pub fn with_sort(mut self, sort: &str) -> Self {
-    self.params.insert("sort", sort.to_string());
-    self
+  with_param!(sort, &str);
+  with_param!(r#type, &str);
+  with_param!(market, &str);
+  with_param!(locale, &str);
+  with_param!(search, &str);
+  with_param!(perpage, usize);
+  with_param!(page, usize);
+  with_param!(active, bool);
+}
+
+pub struct TickersParamsVx<'a> {
+  pub params: HashMap<&'a str, String>
+}
+
+impl<'a> TickersParamsVx<'a> {
+  pub fn new() -> Self {
+    Self {
+      params: HashMap::with_capacity(8)
+    }
   }
 
-  pub fn with_type(mut self, r#type: &str) -> Self {
-    self.params.insert("type", r#type.to_string());
-    self
-  }
-
-  pub fn with_market(mut self, market: &str) -> Self {
-    self.params.insert("sort", market.to_string());
-    self
-  }
-
-  pub fn with_locale(mut self, locale: &str) -> Self {
-    self.params.insert("locale", locale.to_string());
-    self
-  }
-
-  pub fn with_search(mut self, search: &str) -> Self {
-    self.params.insert("search", search.to_string());
-    self
-  }
-
-  pub fn with_perpage(mut self, perpage: usize) -> Self {
-    self.params.insert("perpage", perpage.to_string());
-    self
-  }
-
-  pub fn with_page(mut self, page: usize) -> Self {
-    self.params.insert("page", page.to_string());
-    self
-  }
-
-  pub fn with_active(mut self, active: bool) -> Self {
-    self.params.insert("active", active.to_string());
-    self
-  }
+  with_param!(ticker, &str);
+  with_param!(r#type, &str);
+  with_param!(exchange, &str);
+  with_param!(cusip, &str);
+  with_param!(date, &str);
+  with_param!(active, bool);
+  with_param!(sort, &str);
+  with_param!(order, &str);
+  with_param!(limit, usize);
 }
 
 impl Client {
@@ -122,11 +152,31 @@ impl Client {
   pub fn get_us_tickers(&self, page: usize) -> std::io::Result<TickersResponse> {
     self.get_tickers(Some(
       &TickersParams::new()
-        .with_locale("us")
-        .with_market("stocks")
-        .with_page(page)
+        .locale("us")
+        .market("stocks")
+        .page(page)
         .params
     ))
+  }
+
+  pub fn get_tickers_vx(
+    &self,
+    params: Option<&HashMap<&str, String>>
+  ) -> std::io::Result<TickersResponseVx> {
+    let uri = format!(
+      "{}/vX/reference/tickers?apikey={}{}",
+      self.api_uri,
+      self.key,
+      match params {
+        Some(p) => make_params(p),
+        None => String::new()
+      }
+    );
+
+    let resp = get_response(&uri)?;
+    let resp = resp.into_json_deserialize::<TickersResponseVx>()?;
+
+    Ok(resp)
   }
 }
 
@@ -148,5 +198,12 @@ mod tickers {
     assert!(resp.tickers.len() == 50);
     assert_eq!(resp.tickers[0].market, String::from("STOCKS"));
     assert_eq!(resp.tickers[0].locale, String::from("US"));
+  }
+
+  #[test]
+  fn works_vx() {
+    let client = Client::new();
+    let resp = client.get_tickers_vx(None).unwrap();
+    assert!(resp.results.len() == 100);
   }
 }

@@ -47,7 +47,7 @@ pub struct TickerVx {
   pub primary_exchange: Option<String>,
   pub r#type:       Option<String>,
   pub active:       bool,
-  pub currency_name:     String,
+  pub currency_name:     Option<String>,
   pub cik:     Option<String>,
   pub composite_figi:     Option<String>,
   pub share_class_figi:     Option<String>,
@@ -119,6 +119,7 @@ impl<'a> TickersParamsVx<'a> {
 
   with_param!(ticker, &str);
   with_param!(r#type, &str);
+  with_param!(market, &str);
   with_param!(exchange, &str);
   with_param!(cusip, &str);
   with_param!(date, &str);
@@ -183,11 +184,12 @@ impl Client {
 
   pub fn get_all_tickers_vx(
     &self,
-    date: NaiveDate
+    date: &NaiveDate
   ) -> std::io::Result<Vec<TickerVx>> {
     let limit: usize = 500;
     // Use default params since next_page_path does as well
     let mut params = TickersParamsVx::new()
+      .market("stocks")
       .limit(limit)
       .order("asc")
       .sort("ticker")
@@ -241,13 +243,14 @@ mod tickers {
   fn works_vx() {
     let client = Client::new();
     let resp = client.get_tickers_vx(None).unwrap();
-    assert_eq!(resp.results.len(), 100);
+    assert!(resp.results.len() > 0)
   }
 
   #[test]
   fn works_vx_day() {
     let client = Client::new();
-    let results = client.get_all_tickers_vx(NaiveDate::from_ymd(2004, 01, 02)).unwrap();
-    assert_eq!(results.len(), 8161);
+    let results = client.get_all_tickers_vx(&NaiveDate::from_ymd(2004, 01, 02)).unwrap();
+    assert_eq!(results.len(), 8163);
   }
 }
+

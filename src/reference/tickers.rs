@@ -162,12 +162,12 @@ impl Client {
     ))
   }
 
-  pub fn get_tickers_vx(
+  pub fn get_tickers_v3(
     &self,
     params: Option<&HashMap<&str, String>>
   ) -> std::io::Result<TickersResponseVx> {
     let uri = format!(
-      "{}/vX/reference/tickers?apikey={}{}",
+      "{}/v3/reference/tickers?apikey={}{}",
       self.api_uri,
       self.key,
       match params {
@@ -196,7 +196,7 @@ impl Client {
       .date(&date.format("%Y-%m-%d").to_string());
     let mut res = Vec::<TickerVx>::new();
     loop {
-      let page = self.get_tickers_vx(Some(&params.params))?;
+      let page = self.get_tickers_v3(Some(&params.params))?;
       res.extend(page.results.into_iter());
       if page.next_page_path.is_none() {
         break;

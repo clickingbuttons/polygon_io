@@ -22,8 +22,8 @@ impl Client {
   pub fn get_locales(&self) -> std::io::Result<LocalesResponse> {
     let uri = format!("{}/v2/reference/locales?apikey={}", self.api_uri, self.key);
 
-    let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<LocalesResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = resp.into_json::<LocalesResponse>()?;
 
     Ok(resp)
   }

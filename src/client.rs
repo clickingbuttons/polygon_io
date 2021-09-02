@@ -1,5 +1,6 @@
+use ureq::{Agent, AgentBuilder};
 use serde::{Deserialize, Serialize};
-use std::{env, fs};
+use std::{env, fs, time::Duration};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Client {
@@ -7,7 +8,25 @@ pub struct Client {
   pub api_uri:    String,
   #[serde(default)]
   pub stream_uri: String,
-  pub key:        String
+  pub key:        String,
+  #[serde(skip)]
+  pub agent:      HttpAgent
+}
+
+#[derive(Clone)]
+pub struct HttpAgent {
+  pub agent: Agent
+}
+
+impl Default for HttpAgent {
+  fn default() -> Self {
+    HttpAgent {
+      agent: AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(10))
+        .timeout_read(Duration::from_secs(10))
+        .build()
+    }
+  }
 }
 
 impl Client {
@@ -36,10 +55,12 @@ impl Client {
         }
       };
     }
+
     res.merge(Client {
       key:        env::var("POLYGON_KEY").unwrap_or_default(),
       api_uri:    env::var("POLYGON_API_URI").unwrap_or_default(),
-      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default()
+      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default(),
+      agent:      HttpAgent::default()
     });
 
     res
@@ -53,7 +74,8 @@ impl Default for Client {
     Self {
       api_uri:    String::from("https://api.polygon.io"),
       stream_uri: String::from("wss://socket.polygon.io"),
-      key:        String::new()
+      key:        String::new(),
+      agent:      HttpAgent::default()
     }
   }
 }

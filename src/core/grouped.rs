@@ -96,8 +96,8 @@ impl Client {
       }
     );
 
-    let resp = get_response(&uri)?;
-    let mut resp = resp.into_json_deserialize::<GroupedResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let mut resp = resp.into_json::<GroupedResponse>()?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {

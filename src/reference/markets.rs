@@ -22,8 +22,8 @@ impl Client {
   pub fn get_markets(&self) -> std::io::Result<MarketsResponse> {
     let uri = format!("{}/v2/reference/markets?apikey={}", self.api_uri, self.key);
 
-    let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<MarketsResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = resp.into_json::<MarketsResponse>()?;
 
     Ok(resp)
   }

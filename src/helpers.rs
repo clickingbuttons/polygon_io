@@ -5,7 +5,7 @@ use std::{
   fmt,
   io::{Error, ErrorKind}
 };
-use ureq::Response;
+use ureq::{Agent, Response};
 
 pub fn make_params(params: &HashMap<&str, String>) -> String {
   params
@@ -15,11 +15,9 @@ pub fn make_params(params: &HashMap<&str, String>) -> String {
     .join("")
 }
 
-pub fn get_response(uri: &str) -> std::io::Result<Response> {
-  let resp = ureq::get(&uri)
-    .timeout_connect(10_000)
-    .timeout_read(10_000)
-    .call();
+
+pub fn get_response(agent: &Agent, uri: &str) -> std::io::Result<Response> {
+  let resp = agent.get(&uri).call().unwrap();
 
   let status = resp.status();
   if status != 200 {

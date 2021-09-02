@@ -26,8 +26,8 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = get_response(&uri)?;
-    let mut resp = resp.into_json_deserialize::<PrevResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let mut resp = resp.into_json::<PrevResponse>()?;
     resp.uri = Some(uri);
 
     if resp.results.len() != 1 {

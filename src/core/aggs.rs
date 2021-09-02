@@ -84,8 +84,8 @@ impl Client {
         None => String::new()
       }
     );
-    let resp = get_response(&uri)?;
-    let mut resp = resp.into_json_deserialize::<AggResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let mut resp = resp.into_json::<AggResponse>()?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {

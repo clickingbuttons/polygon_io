@@ -283,8 +283,8 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<FinancialsResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = resp.into_json::<FinancialsResponse>()?;
 
     Ok(resp)
   }

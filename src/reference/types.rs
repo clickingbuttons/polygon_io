@@ -23,8 +23,8 @@ impl Client {
   pub fn get_types(&self) -> std::io::Result<TypesResponse> {
     let uri = format!("{}/v2/reference/types?apikey={}", self.api_uri, self.key);
 
-    let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<TypesResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = resp.into_json::<TypesResponse>()?;
 
     Ok(resp)
   }

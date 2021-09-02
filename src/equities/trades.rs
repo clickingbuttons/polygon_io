@@ -14,38 +14,57 @@ use std::{
   io::{self, Error, ErrorKind}
 };
 
-fn to_conditions<'de, D>(deserializer: D) -> Result<i64, D::Error>
+// 4 conditions, each 1 byte
+// 1: Settlement type
+//     @, C,  N,  R,  Y
+//     0, 7, 20, 29, 36
+// 2: Reason for trade through exempt / other reason
+//     F,  O,  O,  4,  5, 6,  7,  8,  9
+//    14, 17, 25, 10, 28, 8, 53, 59, 38
+// 3: Extended hours / sequence type
+//     L,  T,  U,  Z
+//    30, 12, 13, 33
+// 4: Self regulatory organization trade detail
+//     A, B,  D,  E, E, G,  H,  I,  K,  M,  P,  Q,  S, W, X
+//     1, 4, 11, 56, 3, 5, 21, 37, 23, 15, 22, 16, 34, 2, 9
+//
+// Polygon has extra conditions like CAP election, Held, etc.
+//
+// https://www.utpplan.com/DOC/UtpBinaryOutputSpec.pdf Page 45
+// https://www.ctaplan.com/publicdocs/ctaplan/notifications/trader-update/CTS_BINARY_OUTPUT_SPECIFICATION.pdf Page 64
+// https://polygon.io/glossary/us/stocks/conditions-indicators has 0-59 (much less than 256)
+fn to_conditions<'de, D>(deserializer: D) -> Result<u32, D::Error>
 where
   D: de::Deserializer<'de>
 {
   struct JsonNumberArrVisitor;
 
   impl<'de> de::Visitor<'de> for JsonNumberArrVisitor {
-    type Value = i64;
+    type Value = u32;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-      formatter.write_str("an array of u32")
+      formatter.write_str("an array of u8")
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
       A: SeqAccess<'de>
     {
-      let mut conditions: [i64; 4] = [
+      let mut conditions: [u32; 4] = [
         seq.next_element()?.unwrap_or(0),
         seq.next_element()?.unwrap_or(0),
         seq.next_element()?.unwrap_or(0),
         seq.next_element()?.unwrap_or(0)
       ];
       conditions.sort();
-      if seq.next_element::<i64>()?.is_some() {
+      if seq.next_element::<u32>()?.is_some() {
         return Err(de::Error::custom("trades must have 4 or less conditions"));
       }
-      let mut res: i64 = 0;
+      let mut res: u32 = 0;
       for (i, c) in conditions.iter().enumerate() {
-        if *c > 512 {
+        if *c > 256 {
           return Err(de::Error::custom(&format!(
-            "condition {} should be < 512",
+            "condition {} should be < 256",
             *c
           )));
         }
@@ -72,9 +91,9 @@ pub struct Trade {
   #[serde(rename(deserialize = "s"))]
   pub size:       u32,
   #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
-  pub conditions: i64,
+  pub conditions: u32,
   #[serde(rename(deserialize = "p"))]
-  pub price:      f32,
+  pub price:      f64,
   #[serde(rename(deserialize = "z"))]
   pub tape:       u8,
   #[serde(rename(deserialize = "q"))]
@@ -88,8 +107,7 @@ pub struct TradesResponse {
   pub results_count: usize,
   pub results: Vec<Trade>,
   // Map is useless
-  // For debugging
-  pub success: bool,
+  pub success: bool, // For debugging
   pub db_latency: usize,
   pub uri: Option<String>
 }
@@ -132,8 +150,8 @@ impl Client {
       }
     );
 
-    let resp = get_response(&uri)?;
-    let mut resp = resp.into_json_deserialize::<TradesResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let mut resp = resp.into_json::<TradesResponse>()?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {

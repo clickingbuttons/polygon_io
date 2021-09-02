@@ -32,8 +32,8 @@ pub struct MarketStatusNowResponse {
 impl Client {
   pub fn get_market_status_now(&self) -> io::Result<MarketStatusNowResponse> {
     let uri = format!("{}/v1/marketstatus/now?apikey={}", self.api_uri, self.key);
-    let resp = get_response(&uri)?;
-    let resp = resp.into_json_deserialize::<MarketStatusNowResponse>()?;
+    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = resp.into_json::<MarketStatusNowResponse>()?;
 
     Ok(resp)
   }

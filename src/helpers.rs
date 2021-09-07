@@ -17,7 +17,14 @@ pub fn make_params(params: &HashMap<&str, String>) -> String {
 
 
 pub fn get_response(agent: &Agent, uri: &str) -> std::io::Result<Response> {
-  let resp = agent.get(&uri).call().unwrap();
+  let resp = agent.get(&uri).call();
+  if resp.is_err() {
+    return Err(Error::new(
+      ErrorKind::TimedOut,
+      format!("Server returned {:?}", resp.unwrap_err())
+    ));
+  }
+  let resp = resp.unwrap();
 
   let status = resp.status();
   if status != 200 {

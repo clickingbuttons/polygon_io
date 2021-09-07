@@ -22,8 +22,10 @@ impl Default for HttpAgent {
   fn default() -> Self {
     HttpAgent {
       agent: AgentBuilder::new()
-        .timeout_connect(Duration::from_secs(10))
-        .timeout_read(Duration::from_secs(10))
+        .max_idle_connections(95)
+        .timeout_connect(Duration::from_secs(5))
+        .timeout_write(Duration::from_secs(5))
+        .timeout_read(Duration::from_secs(20))
         .build()
     }
   }

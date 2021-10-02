@@ -33,7 +33,7 @@ impl Client {
       "{}/v1/marketstatus/upcoming?apikey={}",
       self.api_uri, self.key
     );
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let resp = resp.into_json::<Vec<MarketHolidayResponse>>()?;
 
     Ok(resp)

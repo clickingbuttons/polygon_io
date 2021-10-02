@@ -4,7 +4,7 @@ extern crate ureq;
 use super::Candle;
 use crate::{
   client::Client,
-  helpers::{get_response, make_params},
+  helpers::make_params,
   with_param
 };
 use chrono::{NaiveDate, NaiveDateTime};
@@ -96,7 +96,7 @@ impl Client {
       }
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let mut resp = resp.into_json::<GroupedResponse>()?;
     resp.uri = Some(uri);
 

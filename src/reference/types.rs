@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::get_response};
+use crate::client::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -23,7 +23,7 @@ impl Client {
   pub fn get_types(&self) -> std::io::Result<TypesResponse> {
     let uri = format!("{}/v2/reference/types?apikey={}", self.api_uri, self.key);
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let resp = resp.into_json::<TypesResponse>()?;
 
     Ok(resp)

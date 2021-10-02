@@ -3,7 +3,7 @@ extern crate ureq;
 
 use crate::{
   client::Client,
-  helpers::{get_response, make_params},
+  helpers::make_params,
   with_param
 };
 use chrono::{NaiveDate, NaiveDateTime};
@@ -76,6 +76,51 @@ where
   deserializer.deserialize_any(JsonNumberArrVisitor)
 }
 
+/* Trade Corrections (NYSE)	
+ * Modifier	Indicator
+ * 00	Regular trade which was not corrected, changed or signified as cancel or error.
+ * 01	Original trade which was late corrected (This record contains the original time - HHMM and the corrected data for the trade).
+ * 07	Original trade which was later marked as erroreous
+ * 08	Original trade which was later cancelled
+ * 10	Cancel record (This record follows '08' records)
+ * 11	Error record (This record follows '07' records)
+ * 12	Correction record (This record follows'01' records and contains the correction time and the original "incorrect" data). The final correction will be published.
+*/
+fn to_corrections<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+  D: de::Deserializer<'de>
+{
+  struct JsonNumberVisitor;
+
+  impl<'de> de::Visitor<'de> for JsonNumberVisitor {
+    type Value = u8;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+      formatter.write_str("an int in [0, 1, 7, 8, 10, 11, 12]")
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match v {
+          0 => Ok(0),
+          1 => Ok(1),
+          7 => Ok(2),
+          8 => Ok(3),
+          10 => Ok(4),
+          11 => Ok(5),
+          12 => Ok(6),
+          c => Err(de::Error::custom(&format!(
+            "bad correction {}",
+            c
+          )))
+        }
+    }
+  }
+  deserializer.deserialize_any(JsonNumberVisitor)
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
   #[serde(rename(deserialize = "t"))]
@@ -97,7 +142,9 @@ pub struct Trade {
   #[serde(rename(deserialize = "z"))]
   pub tape:       u8,
   #[serde(rename(deserialize = "q"))]
-  pub uid:        u64
+  pub seq_id:     u64,
+  #[serde(rename(deserialize = "e"), deserialize_with = "to_corrections", default)]
+  pub correction: u8
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -150,7 +197,7 @@ impl Client {
       }
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let mut resp = resp.into_json::<TradesResponse>()?;
     resp.uri = Some(uri);
 
@@ -193,7 +240,7 @@ impl Client {
       res.extend(
         page
           .into_iter()
-          .filter(|trade| !repeated_uids.contains(&trade.uid))
+          .filter(|trade| !repeated_uids.contains(&trade.seq_id))
       );
       if page_len != limit {
         break;
@@ -201,7 +248,7 @@ impl Client {
         repeated_uids = res
           .iter()
           .filter(|trade| trade.ts == page_last_ts)
-          .map(|trade| trade.uid)
+          .map(|trade| trade.seq_id)
           .collect::<Vec<_>>();
         params = params.timestamp(page_last_ts + EST_OFFSET);
       }

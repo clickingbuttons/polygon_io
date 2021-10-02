@@ -1,6 +1,8 @@
-use ureq::{Agent, AgentBuilder};
+use ureq::Response;
 use serde::{Deserialize, Serialize};
-use std::{env, fs, time::Duration};
+use std::{env, fs,
+  io::{Error, ErrorKind}
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Client {
@@ -9,26 +11,6 @@ pub struct Client {
   #[serde(default)]
   pub stream_uri: String,
   pub key:        String,
-  #[serde(skip)]
-  pub agent:      HttpAgent
-}
-
-#[derive(Clone)]
-pub struct HttpAgent {
-  pub agent: Agent
-}
-
-impl Default for HttpAgent {
-  fn default() -> Self {
-    HttpAgent {
-      agent: AgentBuilder::new()
-        .max_idle_connections(95)
-        .timeout_connect(Duration::from_secs(5))
-        .timeout_write(Duration::from_secs(5))
-        .timeout_read(Duration::from_secs(20))
-        .build()
-    }
-  }
 }
 
 impl Client {
@@ -61,14 +43,33 @@ impl Client {
     res.merge(Client {
       key:        env::var("POLYGON_KEY").unwrap_or_default(),
       api_uri:    env::var("POLYGON_API_URI").unwrap_or_default(),
-      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default(),
-      agent:      HttpAgent::default()
+      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default()
     });
 
     res
   }
 
   pub fn new() -> Client { Client::open("polygon.json") }
+
+  pub fn get_response(&self, uri: &str) -> std::io::Result<Response> {
+    let resp = ureq::get(&uri).call();
+    if resp.is_err() {
+      return Err(Error::new(
+        ErrorKind::TimedOut,
+        format!("{:?}", resp.unwrap_err())
+      ));
+    }
+    let resp = resp.unwrap();
+
+    let status = resp.status();
+    if status != 200 {
+      return Err(Error::new(
+        ErrorKind::NotConnected,
+        format!("Server returned {}", status)
+      ));
+    }
+    Ok(resp)
+  }
 }
 
 impl Default for Client {
@@ -76,8 +77,7 @@ impl Default for Client {
     Self {
       api_uri:    String::from("https://api.polygon.io"),
       stream_uri: String::from("wss://socket.polygon.io"),
-      key:        String::new(),
-      agent:      HttpAgent::default()
+      key:        String::new()
     }
   }
 }

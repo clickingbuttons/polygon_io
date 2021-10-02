@@ -43,7 +43,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let resp = resp.into_json::<DividendsResponse>()?;
 
     Ok(resp)

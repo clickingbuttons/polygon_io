@@ -3,9 +3,7 @@ use serde::{de, Deserialize, Serializer};
 use std::{
   collections::HashMap,
   fmt,
-  io::{Error, ErrorKind}
 };
-use ureq::{Agent, Response};
 
 pub fn make_params(params: &HashMap<&str, String>) -> String {
   params
@@ -13,27 +11,6 @@ pub fn make_params(params: &HashMap<&str, String>) -> String {
     .map(|(key, val)| format!("&{}={}", key.to_lowercase(), val))
     .collect::<Vec<String>>()
     .join("")
-}
-
-
-pub fn get_response(agent: &Agent, uri: &str) -> std::io::Result<Response> {
-  let resp = agent.get(&uri).call();
-  if resp.is_err() {
-    return Err(Error::new(
-      ErrorKind::TimedOut,
-      format!("Server returned {:?}", resp.unwrap_err())
-    ));
-  }
-  let resp = resp.unwrap();
-
-  let status = resp.status();
-  if status != 200 {
-    return Err(Error::new(
-      ErrorKind::NotConnected,
-      format!("Server returned {}", status)
-    ));
-  }
-  Ok(resp)
 }
 
 const POLYGON_DATE_FORMAT: &str = "%Y-%m-%d";

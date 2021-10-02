@@ -146,7 +146,7 @@ impl Client {
       }
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let resp = resp.into_json::<TickersResponse>()?;
 
     Ok(resp)
@@ -176,7 +176,7 @@ impl Client {
       }
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let resp = resp.into_json::<TickersResponseVx>()?;
 
     Ok(resp)

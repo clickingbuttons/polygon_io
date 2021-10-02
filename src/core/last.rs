@@ -2,7 +2,7 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{client::Client, helpers::get_response};
+use crate::client::Client;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Error, ErrorKind};
 
@@ -26,7 +26,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = get_response(&self.agent.agent, &uri)?;
+    let resp = self.get_response(&uri)?;
     let mut resp = resp.into_json::<PrevResponse>()?;
     resp.uri = Some(uri);
 

@@ -86,7 +86,7 @@ where
  * 11	Error record (This record follows '07' records)
  * 12	Correction record (This record follows'01' records and contains the correction time and the original "incorrect" data). The final correction will be published.
 */
-fn to_corrections<'de, D>(deserializer: D) -> Result<u8, D::Error>
+fn to_error<'de, D>(deserializer: D) -> Result<u8, D::Error>
 where
   D: de::Deserializer<'de>
 {
@@ -103,48 +103,92 @@ where
     where
         E: de::Error,
     {
-        match v {
-          0 => Ok(0),
-          1 => Ok(1),
-          7 => Ok(2),
-          8 => Ok(3),
-          10 => Ok(4),
-          11 => Ok(5),
-          12 => Ok(6),
-          c => Err(de::Error::custom(&format!(
-            "bad correction {}",
-            c
-          )))
-        }
+      match v {
+        0 => Ok(0),
+        1 => Ok(1),
+        7 => Ok(2),
+        8 => Ok(3),
+        10 => Ok(4),
+        11 => Ok(5),
+        12 => Ok(6),
+        c => Err(de::Error::custom(&format!(
+          "bad correction {}",
+          c
+        )))
+      }
     }
   }
   deserializer.deserialize_any(JsonNumberVisitor)
 }
 
+/* Trade ID:
+ * Up to 8 char string in 2015
+ * Gone in 2017
+ * Back as u64 string in 2018
+ */
+fn to_id<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+  D: de::Deserializer<'de>
+{
+  struct JsonStringVisitor;
+
+  impl<'de> de::Visitor<'de> for JsonStringVisitor {
+    type Value = u64;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+      formatter.write_str("a string")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+      let mut res = [0; 8]; 
+      if v.len() <= 8 {
+        let bytes = &v.as_bytes();
+        res[0..bytes.len()].copy_from_slice(bytes);
+        let res = u64::from_be_bytes(res);
+        Ok(res)
+      } else if v.len() <= 20 {
+        let res = v.parse::<u64>().expect("Parseable u64");
+        Ok(res)
+      } else {
+        Err(de::Error::custom(&format!(
+          "bad trade id {}",
+          v
+        )))
+      }
+    }
+  }
+  deserializer.deserialize_any(JsonStringVisitor)
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
   #[serde(rename(deserialize = "t"))]
-  pub ts:         i64,
-  // #[serde(rename(deserialize = "y"))]
-  // pub ts_participant: Option<i64>,
+  pub ts:             i64,
+  #[serde(rename(deserialize = "y"))]
+  pub ts_participant: Option<i64>,
   // #[serde(rename(deserialize = "f"))]
   // pub ts_trf: Option<i64>,
   #[serde(default)]
-  pub symbol:     String,
-  #[serde(rename(deserialize = "x"))]
-  pub exchange:   u8,
+  pub symbol:         String,
   #[serde(rename(deserialize = "s"))]
-  pub size:       u32,
-  #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
-  pub conditions: u32,
+  pub size:           u32,
   #[serde(rename(deserialize = "p"))]
-  pub price:      f64,
+  pub price:          f64,
+  #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
+  pub conditions:     u32,
+  #[serde(rename(deserialize = "e"), deserialize_with = "to_error", default)]
+  pub error:          u8,
+  #[serde(rename(deserialize = "x"))]
+  pub exchange:       u8,
   #[serde(rename(deserialize = "z"))]
-  pub tape:       u8,
+  pub tape:           u8,
+  #[serde(rename(deserialize = "i"), deserialize_with = "to_id", default)]
+  pub id:             u64,
   #[serde(rename(deserialize = "q"))]
-  pub seq_id:     u64,
-  #[serde(rename(deserialize = "e"), deserialize_with = "to_corrections", default)]
-  pub correction: u8
+  pub seq_id:         u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

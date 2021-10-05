@@ -55,13 +55,13 @@ pub struct Candle {
   #[serde(rename(deserialize = "T"), default)]
   pub symbol:    String,
   #[serde(rename(deserialize = "o"))]
-  pub open:      f32,
+  pub open:      f64,
   #[serde(rename(deserialize = "h"))]
-  pub high:      f32,
+  pub high:      f64,
   #[serde(rename(deserialize = "l"))]
-  pub low:       f32,
+  pub low:       f64,
   #[serde(rename(deserialize = "c"))]
-  pub close:     f32,
+  pub close:     f64,
   #[serde(rename(deserialize = "v"), deserialize_with = "f64_to_u64")]
   pub volume:    u64,
   #[serde(rename(deserialize = "vw"), default = "default_vwap")]

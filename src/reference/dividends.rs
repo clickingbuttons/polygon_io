@@ -43,8 +43,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<DividendsResponse>()?;
+    let resp = self.get_response::<DividendsResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -56,7 +55,7 @@ mod dividends {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let splits = client.get_dividends("AAPL").unwrap();
     assert!(splits.results.len() > 60);
   }

@@ -283,8 +283,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<FinancialsResponse>()?;
+    let resp = self.get_response::<FinancialsResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -296,7 +295,7 @@ mod financials {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let financials = client.get_financials("AAPL").unwrap();
     assert!(financials.results.len() > 400);
   }

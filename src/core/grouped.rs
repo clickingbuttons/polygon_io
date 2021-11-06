@@ -92,8 +92,7 @@ impl Client {
       }
     );
 
-    let resp = self.get_response(&uri)?;
-    let mut resp = resp.into_json::<GroupedResponse>()?;
+    let mut resp = self.get_response::<GroupedResponse>(&uri)?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {
@@ -129,7 +128,7 @@ mod grouped {
 
   #[test]
   fn start() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let params = GroupedParams::new().unadjusted(true).params;
     let grouped = client
@@ -142,7 +141,7 @@ mod grouped {
 
   #[test]
   fn no_bad_ranges() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let params = GroupedParams::new().unadjusted(true).params;
     for _ in 0..50 {
@@ -154,7 +153,7 @@ mod grouped {
 
   #[test]
   fn no_garbage_tickers() {
-    let client = Client::new();
+    let mut client = Client::new();
     let bad_dates = vec![
       NaiveDate::from_ymd(2020, 04, 07),
       NaiveDate::from_ymd(2020, 04, 08),
@@ -180,7 +179,7 @@ mod grouped {
 
   #[test]
   fn no_missing_vw() {
-    let client = Client::new();
+    let mut client = Client::new();
     let bad_dates = vec![
       NaiveDate::from_ymd(2020, 04, 07),
       NaiveDate::from_ymd(2020, 04, 08),
@@ -206,7 +205,7 @@ mod grouped {
 
   #[test]
   fn empty_results() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2004, 1, 1);
     let params = GroupedParams::new().unadjusted(true).params;
     match client.get_grouped(Locale::US, Market::Stocks, date, Some(&params)) {

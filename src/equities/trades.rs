@@ -232,8 +232,7 @@ impl Client {
       }
     );
 
-    let resp = self.get_response(&uri)?;
-    let mut resp = resp.into_json::<TradesResponse>()?;
+    let mut resp = self.get_response::<TradesResponse>(&uri)?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {
@@ -300,7 +299,7 @@ mod trades {
 
   #[test]
   fn appl_2004_works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let params = TradesParams::new().params;
     let trades = client.get_trades("AAPL", date, Some(&params)).unwrap();
@@ -311,7 +310,7 @@ mod trades {
 
   #[test]
   fn limit_works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2004, 01, 02);
     let limit = 500;
     let params = TradesParams::new().limit(limit).params;
@@ -322,7 +321,7 @@ mod trades {
 
   #[test]
   fn get_all_works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2020, 01, 02);
     let trades = client.get_all_trades("AAPL", date).unwrap();
     let count = 283_504;

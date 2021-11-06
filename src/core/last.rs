@@ -26,8 +26,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = self.get_response(&uri)?;
-    let mut resp = resp.into_json::<PrevResponse>()?;
+    let mut resp = self.get_response::<PrevResponse>(&uri)?;
     resp.uri = Some(uri);
 
     if resp.results.len() != 1 {
@@ -56,7 +55,7 @@ mod prev {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let prev = client.get_prev("AAPL").unwrap();
     assert_eq!(prev.results.len(), 1);
   }

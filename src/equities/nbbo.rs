@@ -88,8 +88,7 @@ impl Client {
       }
     );
 
-    let resp = self.get_response(&uri)?;
-    let mut resp = resp.into_json::<NBBOsResponse>()?;
+    let mut resp = self.get_response::<NBBOsResponse>(&uri)?;
     resp.uri = Some(uri);
 
     if resp.results.len() == 0 {
@@ -125,7 +124,7 @@ mod nbbo {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
     let params = NBBOsParams::new().limit(limit).params;

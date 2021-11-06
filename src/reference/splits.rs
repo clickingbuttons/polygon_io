@@ -48,8 +48,7 @@ impl Client {
       self.api_uri, symbol, self.key
     );
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<SplitsResponse>()?;
+    let resp = self.get_response::<SplitsResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -61,7 +60,7 @@ mod splits {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let splits = client.get_splits("AAPL").unwrap();
     assert!(splits.results.len() > 3);
   }

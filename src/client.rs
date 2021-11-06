@@ -1,5 +1,7 @@
-use ureq::Response;
+use std::io::Read;
+use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 use std::{env, fs,
   io::{Error, ErrorKind},
   thread
@@ -86,9 +88,9 @@ impl Client {
 
   pub fn new() -> Client { Client::open("polygon.json") }
 
-  pub fn get_response(&mut self, uri: &str) -> std::io::Result<Response> {
+  pub fn get_response<T: DeserializeOwned>(&mut self, uri: &str) -> std::io::Result<T> {
     self.ratelimit_handle.as_mut().unwrap().wait();
-    let resp = ureq::get(&uri).call();
+    let resp = ureq::get(&uri).set("accept-encoding", "gzip").call();
     if resp.is_err() {
       return Err(Error::new(
         ErrorKind::TimedOut,
@@ -104,7 +106,24 @@ impl Client {
         format!("Server returned {}", status)
       ));
     }
-    Ok(resp)
+
+    let content_encoding = resp.header("content-encoding");
+    if content_encoding.is_none() || content_encoding.unwrap() != "gzip" {
+      return Ok(resp.into_json::<T>()?);
+    }
+
+    // Decompress
+    let expected_len = 2_500_000;
+    let mut bytes: Vec<u8> = Vec::with_capacity(expected_len);
+    resp.into_reader()
+        .take(10_000_000)
+        .read_to_end(&mut bytes)?;
+
+    let mut decoder = GzDecoder::new(&bytes[..]);
+    let mut body = String::new();
+    decoder.read_to_string(&mut body).unwrap();
+
+    Ok(serde_json::from_str::<T>(&body)?)
   }
 }
 

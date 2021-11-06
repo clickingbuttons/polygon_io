@@ -23,8 +23,7 @@ impl Client {
   pub fn get_types(&mut self) -> std::io::Result<TypesResponse> {
     let uri = format!("{}/v2/reference/types?apikey={}", self.api_uri, self.key);
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<TypesResponse>()?;
+    let resp = self.get_response::<TypesResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -36,7 +35,7 @@ mod types {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let types = client.get_types().unwrap();
     assert_eq!(
       types.results.types.get("CS").unwrap(),

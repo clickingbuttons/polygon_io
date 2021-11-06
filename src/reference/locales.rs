@@ -22,8 +22,7 @@ impl Client {
   pub fn get_locales(&mut self) -> std::io::Result<LocalesResponse> {
     let uri = format!("{}/v2/reference/locales?apikey={}", self.api_uri, self.key);
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<LocalesResponse>()?;
+    let resp = self.get_response::<LocalesResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -35,7 +34,7 @@ mod locales {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let locales = client.get_locales().unwrap();
     assert!(locales.results.len() > 17);
     assert!(locales

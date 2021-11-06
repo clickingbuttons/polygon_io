@@ -32,8 +32,7 @@ pub struct MarketStatusNowResponse {
 impl Client {
   pub fn get_market_status_now(&mut self) -> io::Result<MarketStatusNowResponse> {
     let uri = format!("{}/v1/marketstatus/now?apikey={}", self.api_uri, self.key);
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<MarketStatusNowResponse>()?;
+    let resp = self.get_response::<MarketStatusNowResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -45,7 +44,7 @@ mod market_status_now {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
 
     let resp = client.get_market_status_now();
     assert!(resp.is_ok());

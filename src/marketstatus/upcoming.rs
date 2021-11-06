@@ -33,8 +33,7 @@ impl Client {
       "{}/v1/marketstatus/upcoming?apikey={}",
       self.api_uri, self.key
     );
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<Vec<MarketHolidayResponse>>()?;
+    let resp = self.get_response::<Vec<MarketHolidayResponse>>(&uri)?;
 
     Ok(resp)
   }
@@ -46,7 +45,7 @@ mod market_status_upcoming {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
 
     let resp = client.get_market_status_upcoming();
     assert!(resp.is_ok());

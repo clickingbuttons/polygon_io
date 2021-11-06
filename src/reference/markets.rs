@@ -22,8 +22,7 @@ impl Client {
   pub fn get_markets(&mut self) -> std::io::Result<MarketsResponse> {
     let uri = format!("{}/v2/reference/markets?apikey={}", self.api_uri, self.key);
 
-    let resp = self.get_response(&uri)?;
-    let resp = resp.into_json::<MarketsResponse>()?;
+    let resp = self.get_response::<MarketsResponse>(&uri)?;
 
     Ok(resp)
   }
@@ -35,7 +34,7 @@ mod markets {
 
   #[test]
   fn works() {
-    let client = Client::new();
+    let mut client = Client::new();
     let markets = client.get_markets().unwrap();
     assert!(markets
       .results

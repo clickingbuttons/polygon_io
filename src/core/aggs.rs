@@ -82,9 +82,7 @@ impl Client {
         None => String::new()
       }
     );
-    let resp = self.get_response(&uri)?;
-    let mut resp = resp.into_json::<AggResponse>()?;
-    resp.uri = Some(uri);
+    let mut resp = self.get_response::<AggResponse>(&uri)?;
 
     if resp.results.len() == 0 {
       return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
@@ -147,7 +145,7 @@ mod aggs {
 
   #[test]
   fn aapl() {
-    let client = Client::new();
+    let mut client = Client::new();
     let from = NaiveDate::from_ymd(2020, 11, 5);
     let to = NaiveDate::from_ymd(2020, 11, 5);
     let sym = String::from("AAPL");
@@ -162,7 +160,7 @@ mod aggs {
 
   #[test]
   fn mac() {
-    let client = Client::new();
+    let mut client = Client::new();
     let from = NaiveDate::from_ymd(2004, 1, 1);
     let to = NaiveDate::from_ymd(2020, 2, 1);
     let sym = String::from("MAC");
@@ -174,7 +172,7 @@ mod aggs {
 
   #[test]
   fn no_range_errors() {
-    let client = Client::new();
+    let mut client = Client::new();
     let from = NaiveDate::from_ymd(2008, 11, 1);
     let to = NaiveDate::from_ymd(2008, 12, 1);
     let params = AggsParams::new().limit(50_000).params;
@@ -193,7 +191,7 @@ mod aggs {
 
   #[test]
   fn empty_results() {
-    let client = Client::new();
+    let mut client = Client::new();
     let from = NaiveDate::from_ymd(2004, 3, 1);
     let to = NaiveDate::from_ymd(2004, 3, 31);
     let sym = String::from("CINpJ");

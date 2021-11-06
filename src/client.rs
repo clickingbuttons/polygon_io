@@ -1,23 +1,22 @@
-use ratelimit;
+use ureq::Response;
 use serde::{Deserialize, Serialize};
-use std::{
-  env, fs,
+use std::{env, fs,
   io::{Error, ErrorKind},
   thread
 };
-use ureq::Response;
+use ratelimit;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Client {
   #[serde(default)]
-  pub api_uri: String,
+  pub api_uri:           String,
   #[serde(default)]
-  pub stream_uri: String,
-  pub key: String,
+  pub stream_uri:        String,
+  pub key:               String,
   #[serde(default = "default_ratelimit")]
-  pub ratelimit: u32,
+  pub ratelimit:         u32,
   #[serde(skip)]
-  pub ratelimit_handle: Option<ratelimit::Handle>
+  pub ratelimit_handle:  Option<ratelimit::Handle>,
 }
 
 // Polygon's API starts ratelimiting at 100req/s
@@ -26,16 +25,13 @@ const DEFAULT_RATELIMIT: u32 = 95;
 fn default_ratelimit() -> u32 { DEFAULT_RATELIMIT }
 
 fn make_ratelimit(ratelimit: u32) -> ratelimit::Handle {
-  println!("limit {}", ratelimit);
   let mut ratelimit = ratelimit::Builder::new()
     .capacity(1)
     .quantum(1)
     .frequency(ratelimit)
     .build();
   let limit = ratelimit.make_handle();
-  thread::spawn(move || {
-    ratelimit.run();
-  });
+  thread::spawn(move || { ratelimit.run(); });
 
   limit
 }
@@ -77,11 +73,11 @@ impl Client {
       .expect("Ratelimit must be an unsigned int");
 
     res.merge(Client {
-      key: env::var("POLYGON_KEY").unwrap_or_default(),
-      api_uri: env::var("POLYGON_API_URI").unwrap_or_default(),
-      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default(),
+      key:               env::var("POLYGON_KEY").unwrap_or_default(),
+      api_uri:           env::var("POLYGON_API_URI").unwrap_or_default(),
+      stream_uri:        env::var("POLYGON_STREAM_URI").unwrap_or_default(),
       ratelimit,
-      ratelimit_handle: None
+      ratelimit_handle:  None
     });
     res.ratelimit_handle = Some(make_ratelimit(res.ratelimit));
 
@@ -115,11 +111,11 @@ impl Client {
 impl Default for Client {
   fn default() -> Self {
     Self {
-      api_uri: String::from("https://api.polygon.io"),
-      stream_uri: String::from("wss://socket.polygon.io"),
-      key: String::new(),
-      ratelimit: DEFAULT_RATELIMIT,
-      ratelimit_handle: None
+      api_uri:           String::from("https://api.polygon.io"),
+      stream_uri:        String::from("wss://socket.polygon.io"),
+      key:               String::new(),
+      ratelimit:         DEFAULT_RATELIMIT,
+      ratelimit_handle:  None
     }
   }
 }

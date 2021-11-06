@@ -28,7 +28,7 @@ pub struct MarketHolidayResponse {
 }
 
 impl Client {
-  pub fn get_market_status_upcoming(&self) -> io::Result<Vec<MarketHolidayResponse>> {
+  pub fn get_market_status_upcoming(&mut self) -> io::Result<Vec<MarketHolidayResponse>> {
     let uri = format!(
       "{}/v1/marketstatus/upcoming?apikey={}",
       self.api_uri, self.key

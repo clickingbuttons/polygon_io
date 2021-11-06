@@ -147,9 +147,10 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "polygon_io"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "chrono",
+ "ratelimit",
  "serde",
  "serde_json",
  "ureq",
@@ -172,6 +173,12 @@ checksum = "c3d0b9745dc2debf507c8422de05d7226cc1f0644216dfdfead988f9b1ab32a7"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "ratelimit"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c4777eb47471c2a42bee8b553b22b8e5c496f657dc6f8b8e29bd69662f31e7e"
 
 [[package]]
 name = "ring"

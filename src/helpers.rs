@@ -1,9 +1,6 @@
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{de, Deserialize, Serializer};
-use std::{
-  collections::HashMap,
-  fmt,
-};
+use std::{collections::HashMap, fmt};
 
 pub fn make_params(params: &HashMap<&str, String>) -> String {
   params
@@ -140,6 +137,5 @@ macro_rules! with_param {
       self.params.insert(stringify!($param), $param.to_string());
       self
     }
-  }
+  };
 }
-

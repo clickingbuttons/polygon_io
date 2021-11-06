@@ -20,7 +20,7 @@ pub struct TypesResponse {
 }
 
 impl Client {
-  pub fn get_types(&self) -> std::io::Result<TypesResponse> {
+  pub fn get_types(&mut self) -> std::io::Result<TypesResponse> {
     let uri = format!("{}/v2/reference/types?apikey={}", self.api_uri, self.key);
 
     let resp = self.get_response(&uri)?;

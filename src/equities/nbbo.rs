@@ -1,11 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{
-  client::Client,
-  helpers::make_params,
-  with_param
-};
+use crate::{client::Client, helpers::make_params, with_param};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -58,21 +54,24 @@ pub struct NBBOsParams<'a> {
 }
 
 impl<'a> NBBOsParams<'a> {
+  with_param!(timestamp, i64);
+
+  with_param!(timestamp_limit, i64);
+
+  with_param!(reverse, bool);
+
+  with_param!(limit, usize);
+
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(4)
     }
   }
-
-  with_param!(timestamp, i64);
-  with_param!(timestamp_limit, i64);
-  with_param!(reverse, bool);
-  with_param!(limit, usize);
 }
 
 impl Client {
   pub fn get_nbbo(
-    &self,
+    &mut self,
     symbol: &str,
     date: NaiveDate,
     params: Option<&HashMap<&str, String>>

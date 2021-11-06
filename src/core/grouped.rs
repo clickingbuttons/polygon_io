@@ -2,11 +2,7 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{
-  client::Client,
-  helpers::make_params,
-  with_param
-};
+use crate::{client::Client, helpers::make_params, with_param};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -66,18 +62,18 @@ pub struct GroupedParams<'a> {
 }
 
 impl<'a> GroupedParams<'a> {
+  with_param!(unadjusted, bool);
+
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(1)
     }
   }
-
-  with_param!(unadjusted, bool);
 }
 
 impl Client {
   pub fn get_grouped(
-    &self,
+    &mut self,
     locale: Locale,
     market: Market,
     date: NaiveDate,
@@ -126,7 +122,7 @@ impl Client {
 
 #[cfg(test)]
 mod grouped {
-  use super::{Locale, Market, GroupedParams};
+  use super::{GroupedParams, Locale, Market};
   use crate::client::Client;
   use chrono::NaiveDate;
   use std::io::ErrorKind;

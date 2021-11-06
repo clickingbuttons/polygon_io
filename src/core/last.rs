@@ -20,7 +20,7 @@ pub struct PrevResponse {
 }
 
 impl Client {
-  pub fn get_prev(&self, symbol: &str) -> io::Result<PrevResponse> {
+  pub fn get_prev(&mut self, symbol: &str) -> io::Result<PrevResponse> {
     let uri = format!(
       "{}/v2/aggs/ticker/{}/prev?apikey={}",
       self.api_uri, symbol, self.key

@@ -37,7 +37,7 @@ pub struct DividendsResponse {
 }
 
 impl Client {
-  pub fn get_dividends(&self, symbol: &str) -> std::io::Result<DividendsResponse> {
+  pub fn get_dividends(&mut self, symbol: &str) -> std::io::Result<DividendsResponse> {
     let uri = format!(
       "{}/v2/reference/dividends/{}?apikey={}",
       self.api_uri, symbol, self.key

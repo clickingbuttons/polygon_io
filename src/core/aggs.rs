@@ -2,11 +2,7 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{
-  client::Client,
-  helpers::make_params,
-  with_param
-};
+use crate::{client::Client, helpers::make_params, with_param};
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -49,20 +45,22 @@ pub struct AggsParams<'a> {
 }
 
 impl<'a> AggsParams<'a> {
+  with_param!(unadjusted, bool);
+
+  with_param!(sort, &str);
+
+  with_param!(limit, i32);
+
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(3)
     }
   }
-
-  with_param!(unadjusted, bool);
-  with_param!(sort, &str);
-  with_param!(limit, i32);
 }
 
 impl Client {
   pub fn get_aggs(
-    &self,
+    &mut self,
     symbol: &str,
     multiplier: i64,
     timespan: Timespan,
@@ -169,7 +167,9 @@ mod aggs {
     let to = NaiveDate::from_ymd(2020, 2, 1);
     let sym = String::from("MAC");
     let params = AggsParams::new().unadjusted(true).params;
-    client.get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params)).unwrap();
+    client
+      .get_aggs(&sym, 1, Timespan::Minute, from, to, Some(&params))
+      .unwrap();
   }
 
   #[test]

@@ -42,7 +42,7 @@ pub struct SplitsResponse {
 }
 
 impl Client {
-  pub fn get_splits(&self, symbol: &str) -> std::io::Result<SplitsResponse> {
+  pub fn get_splits(&mut self, symbol: &str) -> std::io::Result<SplitsResponse> {
     let uri = format!(
       "{}/v2/reference/splits/{}?apikey={}",
       self.api_uri, symbol, self.key

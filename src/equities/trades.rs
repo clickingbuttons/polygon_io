@@ -1,11 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{
-  client::Client,
-  helpers::make_params,
-  with_param
-};
+use crate::{client::Client, helpers::make_params, with_param};
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{de, de::SeqAccess, Deserialize, Serialize};
 use std::{
@@ -76,16 +72,15 @@ where
   deserializer.deserialize_any(JsonNumberArrVisitor)
 }
 
-/* Trade Corrections (NYSE)	
- * Modifier	Indicator
- * 00	Regular trade which was not corrected, changed or signified as cancel or error.
- * 01	Original trade which was late corrected (This record contains the original time - HHMM and the corrected data for the trade).
- * 07	Original trade which was later marked as erroreous
- * 08	Original trade which was later cancelled
- * 10	Cancel record (This record follows '08' records)
- * 11	Error record (This record follows '07' records)
- * 12	Correction record (This record follows'01' records and contains the correction time and the original "incorrect" data). The final correction will be published.
-*/
+// Trade Corrections (NYSE)
+// Modifier	Indicator
+// 00	Regular trade which was not corrected, changed or signified as cancel or error.
+// 01	Original trade which was late corrected (This record contains the original time - HHMM and the corrected data for the trade).
+// 07	Original trade which was later marked as erroreous
+// 08	Original trade which was later cancelled
+// 10	Cancel record (This record follows '08' records)
+// 11	Error record (This record follows '07' records)
+// 12	Correction record (This record follows'01' records and contains the correction time and the original "incorrect" data). The final correction will be published.
 fn to_error<'de, D>(deserializer: D) -> Result<u8, D::Error>
 where
   D: de::Deserializer<'de>
@@ -101,7 +96,7 @@ where
 
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
-        E: de::Error,
+      E: de::Error
     {
       match v {
         0 => Ok(0),
@@ -111,21 +106,17 @@ where
         10 => Ok(4),
         11 => Ok(5),
         12 => Ok(6),
-        c => Err(de::Error::custom(&format!(
-          "bad correction {}",
-          c
-        )))
+        c => Err(de::Error::custom(&format!("bad correction {}", c)))
       }
     }
   }
   deserializer.deserialize_any(JsonNumberVisitor)
 }
 
-/* Trade ID:
- * Up to 8 char string in 2015
- * Gone in 2017
- * Back as u64 string in 2018
- */
+// Trade ID:
+// Up to 8 char string in 2015
+// Gone in 2017
+// Back as u64 string in 2018
 fn to_id<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
   D: de::Deserializer<'de>
@@ -141,9 +132,9 @@ where
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
-        E: de::Error,
+      E: de::Error
     {
-      let mut res = [0; 8]; 
+      let mut res = [0; 8];
       if v.len() <= 8 {
         let bytes = &v.as_bytes();
         res[0..bytes.len()].copy_from_slice(bytes);
@@ -153,10 +144,7 @@ where
         let res = v.parse::<u64>().expect("Parseable u64");
         Ok(res)
       } else {
-        Err(de::Error::custom(&format!(
-          "bad trade id {}",
-          v
-        )))
+        Err(de::Error::custom(&format!("bad trade id {}", v)))
       }
     }
   }
@@ -166,29 +154,29 @@ where
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
   #[serde(rename(deserialize = "t"))]
-  pub ts:             i64,
+  pub ts: i64,
   #[serde(rename(deserialize = "y"))]
   pub ts_participant: Option<i64>,
   // #[serde(rename(deserialize = "f"))]
   // pub ts_trf: Option<i64>,
   #[serde(default)]
-  pub symbol:         String,
+  pub symbol: String,
   #[serde(rename(deserialize = "s"))]
-  pub size:           u32,
+  pub size: u32,
   #[serde(rename(deserialize = "p"))]
-  pub price:          f64,
+  pub price: f64,
   #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
-  pub conditions:     u32,
+  pub conditions: u32,
   #[serde(rename(deserialize = "e"), deserialize_with = "to_error", default)]
-  pub error:          u8,
+  pub error: u8,
   #[serde(rename(deserialize = "x"))]
-  pub exchange:       u8,
+  pub exchange: u8,
   #[serde(rename(deserialize = "z"))]
-  pub tape:           u8,
+  pub tape: u8,
   #[serde(rename(deserialize = "i"), deserialize_with = "to_id", default)]
-  pub id:             u64,
+  pub id: u64,
   #[serde(rename(deserialize = "q"))]
-  pub seq_id:         u64,
+  pub seq_id: u64
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -208,23 +196,26 @@ pub struct TradesParams<'a> {
 }
 
 impl<'a> TradesParams<'a> {
+  with_param!(timestamp, i64);
+
+  with_param!(timestamp_limit, i64);
+
+  with_param!(reverse, bool);
+
+  with_param!(limit, usize);
+
   pub fn new() -> Self {
     Self {
       params: HashMap::with_capacity(4)
     }
   }
-  
-  with_param!(timestamp, i64);
-  with_param!(timestamp_limit, i64);
-  with_param!(reverse, bool);
-  with_param!(limit, usize);
 }
 
 const EST_OFFSET: i64 = 5 * 60 * 60 * 1_000_000_000;
 
 impl Client {
   pub fn get_trades(
-    &self,
+    &mut self,
     symbol: &str,
     date: NaiveDate,
     params: Option<&HashMap<&str, String>>
@@ -272,7 +263,7 @@ impl Client {
 
   // This API should use "q" for paging rather than "ts" which is not unique.
   // This method overcomes that by filtering the "q"s from the last page on the next page.
-  pub fn get_all_trades(&self, symbol: &str, date: NaiveDate) -> io::Result<Vec<Trade>> {
+  pub fn get_all_trades(&mut self, symbol: &str, date: NaiveDate) -> io::Result<Vec<Trade>> {
     let limit: usize = 50_000;
     let mut params = TradesParams::new().limit(limit);
     let mut res = Vec::<Trade>::new();

@@ -19,7 +19,7 @@ pub struct MarketsResponse {
 }
 
 impl Client {
-  pub fn get_markets(&self) -> std::io::Result<MarketsResponse> {
+  pub fn get_markets(&mut self) -> std::io::Result<MarketsResponse> {
     let uri = format!("{}/v2/reference/markets?apikey={}", self.api_uri, self.key);
 
     let resp = self.get_response(&uri)?;

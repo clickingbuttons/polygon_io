@@ -2,7 +2,6 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::{client::Client, helpers::make_params, with_param};
-use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use std::{
   collections::HashMap,
@@ -11,41 +10,31 @@ use std::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {
-  #[serde(rename(deserialize = "t"))]
+  #[serde(rename(deserialize = "sip_timestamp"))]
   pub ts: i64,
-  #[serde(rename(deserialize = "y"))]
+  #[serde(rename(deserialize = "participant_timestamp"))]
   pub ts_participant: Option<i64>,
-  #[serde(rename(deserialize = "f"))]
+  #[serde(rename(deserialize = "trf_timestamp"))]
   pub ts_trf: Option<i64>,
   #[serde(default)]
   pub symbol: String,
-  #[serde(rename(deserialize = "x"))]
   pub bid_exchange: u32,
-  #[serde(rename(deserialize = "X"))]
   pub ask_exchange: u32,
-  #[serde(rename(deserialize = "s"))]
+  #[serde(rename(deserialize = "bid_size"))]
   pub bid_lots: u32,
-  #[serde(rename(deserialize = "S"))]
+  #[serde(rename(deserialize = "ask_size"))]
   pub ask_lots: u32,
-  //#[serde(rename(deserialize = "c"))]
-  // pub conditions:     i32,
-  #[serde(rename(deserialize = "p"))]
+  //#[serde(deserialize_with = "to_conditions", default)]
+  //pub conditions: u32,
   pub bid_price: f32,
-  #[serde(rename(deserialize = "P"))]
   pub ask_price: f32,
-  #[serde(rename(deserialize = "z"))]
   pub tape: u32
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NBBOsResponse {
-  #[serde(rename(deserialize = "ticker"))]
-  pub symbol: String,
-  pub results_count: usize,
   pub results: Vec<NBBO>,
-  pub db_latency: usize,
   // For debugging
-  pub success: bool,
   pub uri: Option<String>
 }
 
@@ -54,13 +43,18 @@ pub struct NBBOsParams<'a> {
 }
 
 impl<'a> NBBOsParams<'a> {
-  with_param!(timestamp, i64);
+  with_param!(timestamp, &str);
+  with_param!(timestamp_lt, &str);
+  with_param!(timestamp_lte, &str);
+  with_param!(timestamp_gt, &str);
+  with_param!(timestamp_gte, &str);
 
-  with_param!(timestamp_limit, i64);
-
+  with_param!(order, &str);
   with_param!(reverse, bool);
-
   with_param!(limit, usize);
+
+  // Undocumented but appears in next_page_path
+  with_param!(cursor, &str);
 
   pub fn new() -> Self {
     Self {
@@ -73,19 +67,13 @@ impl Client {
   pub fn get_nbbo(
     &mut self,
     symbol: &str,
-    date: NaiveDate,
     params: Option<&HashMap<&str, String>>
   ) -> io::Result<NBBOsResponse> {
     let uri = format!(
-      "{}/v2/ticks/stocks/nbbo/{}/{}?apikey={}{}",
+      "{}/v3/quotes/{}{}",
       self.api_uri,
       symbol,
-      date.format("%Y-%m-%d"),
-      self.key,
-      match params {
-        Some(p) => make_params(p),
-        None => String::new()
-      }
+			make_params(params),
     );
 
     let mut resp = self.get_response::<NBBOsResponse>(&uri)?;
@@ -97,20 +85,7 @@ impl Client {
 
     // Polygon returns the exchange opening time in nanoseconds since epoch
     for row in resp.results.iter_mut() {
-      // Only US equities are at "stocks" endpoint
-      row.ts -= 5 * 60 * 60 * 1_000_000_000;
-      if NaiveDateTime::from_timestamp(row.ts / 1_000_000_000, 0).date() != date {
-        return Err(Error::new(
-          ErrorKind::BrokenPipe,
-          format!(
-            "ts {} is out of range for date {}",
-            row.ts,
-            date.format("%Y-%m-%d")
-          )
-        ));
-      }
-      // Add symbol
-      row.symbol = resp.symbol.clone();
+      row.symbol = symbol.to_string();
     }
 
     Ok(resp)
@@ -120,16 +95,13 @@ impl Client {
 #[cfg(test)]
 mod nbbo {
   use crate::{client::Client, equities::nbbo::NBBOsParams};
-  use chrono::NaiveDate;
 
   #[test]
   fn works() {
     let mut client = Client::new();
-    let date = NaiveDate::from_ymd(2005, 01, 03);
     let limit = 500;
-    let params = NBBOsParams::new().limit(limit).params;
-    let nbbo = client.get_nbbo("AAPL", date, Some(&params)).unwrap();
-    assert_eq!(nbbo.results_count, limit);
+    let params = NBBOsParams::new().timestamp("2005-01-03").limit(limit).params;
+    let nbbo = client.get_nbbo("AAPL", Some(&params)).unwrap();
     assert_eq!(nbbo.results.len(), limit);
   }
 }

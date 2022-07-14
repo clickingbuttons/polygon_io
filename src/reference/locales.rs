@@ -20,7 +20,7 @@ pub struct LocalesResponse {
 
 impl Client {
   pub fn get_locales(&mut self) -> std::io::Result<LocalesResponse> {
-    let uri = format!("{}/v2/reference/locales?apikey={}", self.api_uri, self.key);
+    let uri = format!("{}/v2/reference/locales", self.api_uri);
 
     let resp = self.get_response::<LocalesResponse>(&uri)?;
 

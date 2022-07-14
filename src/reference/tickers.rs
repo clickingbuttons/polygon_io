@@ -94,13 +94,9 @@ impl Client {
     params: Option<&HashMap<&str, String>>
   ) -> std::io::Result<TickersResponse> {
     let uri = format!(
-      "{}/v3/reference/tickers?apikey={}{}",
+      "{}/v3/reference/tickers?{}",
       self.api_uri,
-      self.key,
-      match params {
-        Some(p) => make_params(p),
-        None => String::new()
-      }
+      make_params(params),
     );
 
     let resp = self.get_response::<TickersResponse>(&uri)?;

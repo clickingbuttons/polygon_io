@@ -69,18 +69,14 @@ impl Client {
     params: Option<&HashMap<&str, String>>
   ) -> io::Result<AggResponse> {
     let uri = format!(
-      "{}/v2/aggs/ticker/{}/range/{}/{}/{}/{}?apikey={}{}",
+      "{}/v2/aggs/ticker/{}/range/{}/{}/{}/{}{}",
       self.api_uri,
       symbol,
       multiplier,
       format!("{:?}", timespan).to_lowercase(),
       from.format("%Y-%m-%d"),
       to.format("%Y-%m-%d"),
-      self.key,
-      match params {
-        Some(p) => make_params(p),
-        None => String::new()
-      }
+      make_params(params),
     );
     let mut resp = self.get_response::<AggResponse>(&uri)?;
 

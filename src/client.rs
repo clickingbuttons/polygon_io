@@ -90,7 +90,10 @@ impl Client {
 
   pub fn get_response<T: DeserializeOwned>(&mut self, uri: &str) -> std::io::Result<T> {
     self.ratelimit_handle.as_mut().unwrap().wait();
-    let resp = ureq::get(&uri).set("accept-encoding", "gzip").call();
+    let resp = ureq::get(&uri)
+			.set("accept-encoding", "gzip")
+			.set("authorization", &format!("Bearer {}", self.key))
+			.call();
     if resp.is_err() {
       return Err(Error::new(
         ErrorKind::TimedOut,

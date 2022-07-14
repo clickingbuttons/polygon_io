@@ -31,7 +31,7 @@ pub struct MarketStatusNowResponse {
 
 impl Client {
   pub fn get_market_status_now(&mut self) -> io::Result<MarketStatusNowResponse> {
-    let uri = format!("{}/v1/marketstatus/now?apikey={}", self.api_uri, self.key);
+    let uri = format!("{}/v1/marketstatus/now", self.api_uri);
     let resp = self.get_response::<MarketStatusNowResponse>(&uri)?;
 
     Ok(resp)

@@ -1,76 +1,14 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::make_params, with_param};
-use chrono::{NaiveDate, NaiveDateTime};
-use serde::{de, de::SeqAccess, Deserialize, Serialize};
+use crate::{client::Client, helpers::{make_params, to_conditions}, with_param};
+use chrono::NaiveDate;
+use serde::{de, Deserialize, Serialize};
 use std::{
   collections::HashMap,
   fmt,
   io::{self, Error, ErrorKind}
 };
-
-// 4 conditions, each 1 byte
-// 1: Settlement type
-//     @, C,  N,  R,  Y
-//     0, 7, 20, 29, 36
-// 2: Reason for trade through exempt / other reason
-//     F,  O,  O,  4,  5, 6,  7,  8,  9
-//    14, 17, 25, 10, 28, 8, 53, 59, 38
-// 3: Extended hours / sequence type
-//     L,  T,  U,  Z
-//    30, 12, 13, 33
-// 4: Self regulatory organization trade detail
-//     A, B,  D,  E, E, G,  H,  I,  K,  M,  P,  Q,  S, W, X
-//     1, 4, 11, 56, 3, 5, 21, 37, 23, 15, 22, 16, 34, 2, 9
-//
-// Polygon has extra conditions like CAP election, Held, etc.
-//
-// https://www.utpplan.com/DOC/UtpBinaryOutputSpec.pdf Page 45
-// https://www.ctaplan.com/publicdocs/ctaplan/notifications/trader-update/CTS_BINARY_OUTPUT_SPECIFICATION.pdf Page 64
-// https://polygon.io/glossary/us/stocks/conditions-indicators has 0-59 (much less than 256)
-fn to_conditions<'de, D>(deserializer: D) -> Result<u32, D::Error>
-where
-  D: de::Deserializer<'de>
-{
-  struct JsonNumberArrVisitor;
-
-  impl<'de> de::Visitor<'de> for JsonNumberArrVisitor {
-    type Value = u32;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-      formatter.write_str("an array of u8")
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-      A: SeqAccess<'de>
-    {
-      let mut conditions: [u32; 4] = [
-        seq.next_element()?.unwrap_or(0),
-        seq.next_element()?.unwrap_or(0),
-        seq.next_element()?.unwrap_or(0),
-        seq.next_element()?.unwrap_or(0)
-      ];
-      conditions.sort();
-      if seq.next_element::<u32>()?.is_some() {
-        return Err(de::Error::custom("trades must have 4 or less conditions"));
-      }
-      let mut res: u32 = 0;
-      for (i, c) in conditions.iter().enumerate() {
-        if *c > 256 {
-          return Err(de::Error::custom(&format!(
-            "condition {} should be < 256",
-            *c
-          )));
-        }
-        res |= c << (8 * i);
-      }
-      Ok(res)
-    }
-  }
-  deserializer.deserialize_any(JsonNumberArrVisitor)
-}
 
 // Trade Corrections (NYSE)
 // Modifier	Indicator
@@ -101,11 +39,11 @@ where
       match v {
         0 => Ok(0),
         1 => Ok(1),
-        7 => Ok(2),
-        8 => Ok(3),
-        10 => Ok(4),
-        11 => Ok(5),
-        12 => Ok(6),
+        7 => Ok(7),
+        8 => Ok(8),
+        10 => Ok(10),
+        11 => Ok(11),
+        12 => Ok(12),
         c => Err(de::Error::custom(&format!("bad correction {}", c)))
       }
     }
@@ -151,44 +89,70 @@ where
   deserializer.deserialize_any(JsonStringVisitor)
 }
 
+// v3 returns things like "size":2.216834e+06
+fn f64_to_u32<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+  D: de::Deserializer<'de>
+{
+  struct JsonNumberVisitor;
+
+  impl<'de> de::Visitor<'de> for JsonNumberVisitor {
+    type Value = u32;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+      formatter.write_str("a number castable to u32")
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+      E: de::Error
+    {
+			Ok(v as u32)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+      E: de::Error
+    {
+			Ok(v as u32)
+    }
+  }
+  deserializer.deserialize_any(JsonNumberVisitor)
+}
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
-  #[serde(rename(deserialize = "t"))]
+  #[serde(rename(deserialize = "sip_timestamp"))]
   pub ts: i64,
-  #[serde(rename(deserialize = "y"))]
+  #[serde(rename(deserialize = "participant_timestamp"))]
   pub ts_participant: Option<i64>,
-  // #[serde(rename(deserialize = "f"))]
-  // pub ts_trf: Option<i64>,
+  #[serde(rename(deserialize = "trf_timestamp"))]
+  pub ts_trf: Option<i64>,
   #[serde(default)]
   pub symbol: String,
-  #[serde(rename(deserialize = "s"))]
+  #[serde(deserialize_with = "f64_to_u32", default)]
   pub size: u32,
-  #[serde(rename(deserialize = "p"))]
+  #[serde(default)]
   pub price: f64,
-  #[serde(rename(deserialize = "c"), deserialize_with = "to_conditions", default)]
+  #[serde(deserialize_with = "to_conditions", default)]
   pub conditions: u32,
-  #[serde(rename(deserialize = "e"), deserialize_with = "to_error", default)]
+  #[serde(rename(deserialize = "correction"), deserialize_with = "to_error", default)]
   pub error: u8,
-  #[serde(rename(deserialize = "x"))]
   pub exchange: u8,
-  #[serde(rename(deserialize = "z"))]
   pub tape: u8,
-  #[serde(rename(deserialize = "i"), deserialize_with = "to_id", default)]
+  #[serde(deserialize_with = "to_id", default)]
   pub id: u64,
-  #[serde(rename(deserialize = "q"))]
+  #[serde(rename(deserialize = "sequence_number"))]
   pub seq_id: u64
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TradesResponse {
-  #[serde(rename(deserialize = "ticker"))]
-  pub symbol: String,
-  pub results_count: usize,
   pub results: Vec<Trade>,
-  // Map is useless
-  pub success: bool, // For debugging
-  pub db_latency: usize,
-  pub uri: Option<String>
+  pub next_url: Option<String>,
+  pub status: String, // For debugging
+  pub uri: Option<String>,
 }
 
 pub struct TradesParams<'a> {
@@ -196,13 +160,18 @@ pub struct TradesParams<'a> {
 }
 
 impl<'a> TradesParams<'a> {
-  with_param!(timestamp, i64);
+  with_param!(timestamp, &str);
+  with_param!(timestamp_lt, &str);
+  with_param!(timestamp_lte, &str);
+  with_param!(timestamp_gt, &str);
+  with_param!(timestamp_gte, &str);
 
-  with_param!(timestamp_limit, i64);
-
+  with_param!(order, &str);
   with_param!(reverse, bool);
-
   with_param!(limit, usize);
+
+  // Undocumented but appears in next_page_path
+  with_param!(cursor, &str);
 
   pub fn new() -> Self {
     Self {
@@ -211,26 +180,19 @@ impl<'a> TradesParams<'a> {
   }
 }
 
-const EST_OFFSET: i64 = 5 * 60 * 60 * 1_000_000_000;
-
 impl Client {
   pub fn get_trades(
     &mut self,
     symbol: &str,
-    date: NaiveDate,
     params: Option<&HashMap<&str, String>>
   ) -> io::Result<TradesResponse> {
     let uri = format!(
-      "{}/v2/ticks/stocks/trades/{}/{}?apikey={}{}",
+      "{}/v3/trades/{}{}",
       self.api_uri,
       symbol,
-      date.format("%Y-%m-%d"),
-      self.key,
-      match params {
-        Some(p) => make_params(p),
-        None => String::new()
-      }
+			make_params(params),
     );
+		println!("{}", uri);
 
     let mut resp = self.get_response::<TradesResponse>(&uri)?;
     resp.uri = Some(uri);
@@ -239,53 +201,32 @@ impl Client {
       return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
     }
 
-    // Polygon returns the exchange opening time in GMT nanoseconds since epoch
     for row in resp.results.iter_mut() {
-      // Only US equities are at "stocks" endpoint
-      row.ts -= EST_OFFSET;
-      if NaiveDateTime::from_timestamp(row.ts / 1_000_000_000, 0).date() != date {
-        return Err(Error::new(
-          ErrorKind::BrokenPipe,
-          format!(
-            "ts {} is out of range for date {}",
-            row.ts + EST_OFFSET,
-            date.format("%Y-%m-%d")
-          )
-        ));
-      }
-      // Add symbol
-      row.symbol = resp.symbol.clone();
+      row.symbol = symbol.to_string();
     }
 
     Ok(resp)
   }
 
-  // This API should use "q" for paging rather than "ts" which is not unique.
-  // This method overcomes that by filtering the "q"s from the last page on the next page.
   pub fn get_all_trades(&mut self, symbol: &str, date: NaiveDate) -> io::Result<Vec<Trade>> {
     let limit: usize = 50_000;
-    let mut params = TradesParams::new().limit(limit);
+    let mut params = TradesParams::new().limit(limit).timestamp(&date.format("%Y-%m-%d").to_string());
     let mut res = Vec::<Trade>::new();
-    let mut repeated_uids = Vec::<u64>::new();
     loop {
-      let page = self.get_trades(symbol, date, Some(&params.params))?.results;
-      let page_len = page.len();
-      let page_last_ts = page[page_len - 1].ts;
-      res.extend(
-        page
-          .into_iter()
-          .filter(|trade| !repeated_uids.contains(&trade.seq_id))
-      );
-      if page_len != limit {
-        break;
-      } else {
-        repeated_uids = res
-          .iter()
-          .filter(|trade| trade.ts == page_last_ts)
-          .map(|trade| trade.seq_id)
-          .collect::<Vec<_>>();
-        params = params.timestamp(page_last_ts + EST_OFFSET);
-      }
+      let page = self.get_trades(symbol, Some(&params.params))?;
+      res.extend(page.results.into_iter());
+			match page.next_url {
+				Some(next_url) => {
+					let split = next_url.split("cursor=").collect::<Vec<&str>>();
+					if split.len() != 2 {
+						let msg = format!("no cursor in next_url {}", next_url);
+						return Err(Error::new(ErrorKind::UnexpectedEof, msg));
+					}
+					let cursor = split[1];
+					params = TradesParams::new().cursor(cursor);
+				},
+				None => break
+			};
     }
 
     Ok(res)
@@ -300,22 +241,18 @@ mod trades {
   #[test]
   fn appl_2004_works() {
     let mut client = Client::new();
-    let date = NaiveDate::from_ymd(2004, 01, 02);
-    let params = TradesParams::new().params;
-    let trades = client.get_trades("AAPL", date, Some(&params)).unwrap();
+    let params = TradesParams::new().timestamp("2004-01-02").limit(50_000).params;
+    let trades = client.get_trades("AAPL", Some(&params)).unwrap();
     let count = 7_452;
-    assert_eq!(trades.results_count, count);
     assert_eq!(trades.results.len(), count);
   }
 
   #[test]
   fn limit_works() {
     let mut client = Client::new();
-    let date = NaiveDate::from_ymd(2004, 01, 02);
     let limit = 500;
-    let params = TradesParams::new().limit(limit).params;
-    let trades = client.get_trades("AAPL", date, Some(&params)).unwrap();
-    assert_eq!(trades.results_count, limit);
+    let params = TradesParams::new().limit(limit).timestamp("2004-01-02").params;
+    let trades = client.get_trades("AAPL", Some(&params)).unwrap();
     assert_eq!(trades.results.len(), limit);
   }
 

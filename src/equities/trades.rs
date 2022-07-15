@@ -205,7 +205,6 @@ impl Client {
       symbol,
       make_params(params),
     );
-    println!("{}", uri);
 
     let mut resp = self.get_response::<TradesResponse>(&uri)?;
     resp.uri = Some(uri);

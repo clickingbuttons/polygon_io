@@ -45,11 +45,11 @@ pub struct Ticker {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TickersResponse {
-  pub results: Vec<Ticker>,
-  pub count: usize,
-  pub next_url: Option<String>,
+  pub results:    Vec<Ticker>,
+  pub count:      usize,
+  pub next_url:   Option<String>,
   // For debugging
-  pub status: String,
+  pub status:     String,
   pub request_id: String
 }
 
@@ -94,7 +94,7 @@ impl Client {
     params: Option<&HashMap<&str, String>>
   ) -> std::io::Result<TickersResponse> {
     let uri = format!(
-      "{}/v3/reference/tickers?{}",
+      "{}/v3/reference/tickers{}",
       self.api_uri,
       make_params(params),
     );

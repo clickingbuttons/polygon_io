@@ -1,7 +1,11 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::{make_params, to_conditions}, with_param};
+use crate::{
+  client::Client,
+  helpers::{make_params, to_conditions},
+  with_param
+};
 use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize};
 use std::{
@@ -107,19 +111,18 @@ where
     where
       E: de::Error
     {
-			Ok(v as u32)
+      Ok(v as u32)
     }
 
     fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
     where
       E: de::Error
     {
-			Ok(v as u32)
+      Ok(v as u32)
     }
   }
   deserializer.deserialize_any(JsonNumberVisitor)
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
@@ -137,7 +140,11 @@ pub struct Trade {
   pub price: f64,
   #[serde(deserialize_with = "to_conditions", default)]
   pub conditions: u32,
-  #[serde(rename(deserialize = "correction"), deserialize_with = "to_error", default)]
+  #[serde(
+    rename(deserialize = "correction"),
+    deserialize_with = "to_error",
+    default
+  )]
   pub error: u8,
   pub exchange: u8,
   pub tape: u8,
@@ -149,10 +156,10 @@ pub struct Trade {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TradesResponse {
-  pub results: Vec<Trade>,
+  pub results:  Vec<Trade>,
   pub next_url: Option<String>,
-  pub status: String, // For debugging
-  pub uri: Option<String>,
+  pub status:   String, // For debugging
+  pub uri:      Option<String>
 }
 
 pub struct TradesParams<'a> {
@@ -161,13 +168,19 @@ pub struct TradesParams<'a> {
 
 impl<'a> TradesParams<'a> {
   with_param!(timestamp, &str);
+
   with_param!(timestamp_lt, &str);
+
   with_param!(timestamp_lte, &str);
+
   with_param!(timestamp_gt, &str);
+
   with_param!(timestamp_gte, &str);
 
   with_param!(order, &str);
+
   with_param!(reverse, bool);
+
   with_param!(limit, usize);
 
   // Undocumented but appears in next_page_path
@@ -190,9 +203,9 @@ impl Client {
       "{}/v3/trades/{}{}",
       self.api_uri,
       symbol,
-			make_params(params),
+      make_params(params),
     );
-		println!("{}", uri);
+    println!("{}", uri);
 
     let mut resp = self.get_response::<TradesResponse>(&uri)?;
     resp.uri = Some(uri);
@@ -210,23 +223,25 @@ impl Client {
 
   pub fn get_all_trades(&mut self, symbol: &str, date: NaiveDate) -> io::Result<Vec<Trade>> {
     let limit: usize = 50_000;
-    let mut params = TradesParams::new().limit(limit).timestamp(&date.format("%Y-%m-%d").to_string());
+    let mut params = TradesParams::new()
+      .limit(limit)
+      .timestamp(&date.format("%Y-%m-%d").to_string());
     let mut res = Vec::<Trade>::new();
     loop {
       let page = self.get_trades(symbol, Some(&params.params))?;
       res.extend(page.results.into_iter());
-			match page.next_url {
-				Some(next_url) => {
-					let split = next_url.split("cursor=").collect::<Vec<&str>>();
-					if split.len() != 2 {
-						let msg = format!("no cursor in next_url {}", next_url);
-						return Err(Error::new(ErrorKind::UnexpectedEof, msg));
-					}
-					let cursor = split[1];
-					params = TradesParams::new().cursor(cursor);
-				},
-				None => break
-			};
+      match page.next_url {
+        Some(next_url) => {
+          let split = next_url.split("cursor=").collect::<Vec<&str>>();
+          if split.len() != 2 {
+            let msg = format!("no cursor in next_url {}", next_url);
+            return Err(Error::new(ErrorKind::UnexpectedEof, msg));
+          }
+          let cursor = split[1];
+          params = TradesParams::new().cursor(cursor);
+        }
+        None => break
+      };
     }
 
     Ok(res)
@@ -241,7 +256,10 @@ mod trades {
   #[test]
   fn appl_2004_works() {
     let mut client = Client::new();
-    let params = TradesParams::new().timestamp("2004-01-02").limit(50_000).params;
+    let params = TradesParams::new()
+      .timestamp("2004-01-02")
+      .limit(50_000)
+      .params;
     let trades = client.get_trades("AAPL", Some(&params)).unwrap();
     let count = 7_452;
     assert_eq!(trades.results.len(), count);
@@ -251,7 +269,10 @@ mod trades {
   fn limit_works() {
     let mut client = Client::new();
     let limit = 500;
-    let params = TradesParams::new().limit(limit).timestamp("2004-01-02").params;
+    let params = TradesParams::new()
+      .limit(limit)
+      .timestamp("2004-01-02")
+      .params;
     let trades = client.get_trades("AAPL", Some(&params)).unwrap();
     assert_eq!(trades.results.len(), limit);
   }

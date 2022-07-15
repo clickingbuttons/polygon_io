@@ -278,10 +278,7 @@ pub struct FinancialsResponse {
 
 impl Client {
   pub fn get_financials(&mut self, symbol: &str) -> std::io::Result<FinancialsResponse> {
-    let uri = format!(
-      "{}/v2/reference/financials/{}",
-      self.api_uri, symbol
-    );
+    let uri = format!("{}/v2/reference/financials/{}", self.api_uri, symbol);
 
     let resp = self.get_response::<FinancialsResponse>(&uri)?;
 

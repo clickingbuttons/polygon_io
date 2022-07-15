@@ -25,7 +25,7 @@ pub struct NBBO {
   #[serde(rename(deserialize = "ask_size"))]
   pub ask_lots: u32,
   //#[serde(deserialize_with = "to_conditions", default)]
-  //pub conditions: u32,
+  // pub conditions: u32,
   pub bid_price: f32,
   pub ask_price: f32,
   pub tape: u32
@@ -35,7 +35,7 @@ pub struct NBBO {
 pub struct NBBOsResponse {
   pub results: Vec<NBBO>,
   // For debugging
-  pub uri: Option<String>
+  pub uri:     Option<String>
 }
 
 pub struct NBBOsParams<'a> {
@@ -44,13 +44,19 @@ pub struct NBBOsParams<'a> {
 
 impl<'a> NBBOsParams<'a> {
   with_param!(timestamp, &str);
+
   with_param!(timestamp_lt, &str);
+
   with_param!(timestamp_lte, &str);
+
   with_param!(timestamp_gt, &str);
+
   with_param!(timestamp_gte, &str);
 
   with_param!(order, &str);
+
   with_param!(reverse, bool);
+
   with_param!(limit, usize);
 
   // Undocumented but appears in next_page_path
@@ -73,7 +79,7 @@ impl Client {
       "{}/v3/quotes/{}{}",
       self.api_uri,
       symbol,
-			make_params(params),
+      make_params(params),
     );
 
     let mut resp = self.get_response::<NBBOsResponse>(&uri)?;
@@ -100,7 +106,10 @@ mod nbbo {
   fn works() {
     let mut client = Client::new();
     let limit = 500;
-    let params = NBBOsParams::new().timestamp("2005-01-03").limit(limit).params;
+    let params = NBBOsParams::new()
+      .timestamp("2005-01-03")
+      .limit(limit)
+      .params;
     let nbbo = client.get_nbbo("AAPL", Some(&params)).unwrap();
     assert_eq!(nbbo.results.len(), limit);
   }

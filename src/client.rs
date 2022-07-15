@@ -1,24 +1,23 @@
-use std::io::Read;
 use flate2::read::GzDecoder;
-use serde::{Deserialize, Serialize};
-use serde::de::DeserializeOwned;
-use std::{env, fs,
-  io::{Error, ErrorKind},
+use ratelimit;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::{
+  env, fs,
+  io::{Error, ErrorKind, Read},
   thread
 };
-use ratelimit;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Client {
   #[serde(default)]
-  pub api_uri:           String,
+  pub api_uri: String,
   #[serde(default)]
-  pub stream_uri:        String,
-  pub key:               String,
+  pub stream_uri: String,
+  pub key: String,
   #[serde(default = "default_ratelimit")]
-  pub ratelimit:         u32,
+  pub ratelimit: u32,
   #[serde(skip)]
-  pub ratelimit_handle:  Option<ratelimit::Handle>,
+  pub ratelimit_handle: Option<ratelimit::Handle>
 }
 
 // Polygon's API starts ratelimiting at 100req/s
@@ -33,7 +32,9 @@ fn make_ratelimit(ratelimit: u32) -> ratelimit::Handle {
     .frequency(ratelimit)
     .build();
   let limit = ratelimit.make_handle();
-  thread::spawn(move || { ratelimit.run(); });
+  thread::spawn(move || {
+    ratelimit.run();
+  });
 
   limit
 }
@@ -70,18 +71,18 @@ impl Client {
     }
 
     let ratelimit: u32 = env::var("POLYGON_RATELIMIT")
-      .unwrap_or(String::from("0"))
+      .unwrap_or(String::from("100000"))
       .parse::<u32>()
       .expect("Ratelimit must be an unsigned int");
 
     res.merge(Client {
-      key:               env::var("POLYGON_KEY").unwrap_or_default(),
-      api_uri:           env::var("POLYGON_API_URI").unwrap_or_default(),
-      stream_uri:        env::var("POLYGON_STREAM_URI").unwrap_or_default(),
+      key: env::var("POLYGON_KEY").unwrap_or_default(),
+      api_uri: env::var("POLYGON_API_URI").unwrap_or_default(),
+      stream_uri: env::var("POLYGON_STREAM_URI").unwrap_or_default(),
       ratelimit,
-      ratelimit_handle:  None
+      ratelimit_handle: None
     });
-    res.ratelimit_handle = Some(make_ratelimit(res.ratelimit));
+    res.ratelimit_handle = Some(make_ratelimit(ratelimit));
 
     res
   }
@@ -91,9 +92,9 @@ impl Client {
   pub fn get_response<T: DeserializeOwned>(&mut self, uri: &str) -> std::io::Result<T> {
     self.ratelimit_handle.as_mut().unwrap().wait();
     let resp = ureq::get(&uri)
-			.set("accept-encoding", "gzip")
-			.set("authorization", &format!("Bearer {}", self.key))
-			.call();
+      .set("accept-encoding", "gzip")
+      .set("authorization", &format!("Bearer {}", self.key))
+      .call();
     if resp.is_err() {
       return Err(Error::new(
         ErrorKind::TimedOut,
@@ -118,9 +119,10 @@ impl Client {
     // Decompress
     let expected_len = 2_500_000;
     let mut bytes: Vec<u8> = Vec::with_capacity(expected_len);
-    resp.into_reader()
-        .take(10_000_000)
-        .read_to_end(&mut bytes)?;
+    resp
+      .into_reader()
+      .take(10_000_000)
+      .read_to_end(&mut bytes)?;
 
     let mut decoder = GzDecoder::new(&bytes[..]);
     let mut body = String::new();
@@ -133,11 +135,11 @@ impl Client {
 impl Default for Client {
   fn default() -> Self {
     Self {
-      api_uri:           String::from("https://api.polygon.io"),
-      stream_uri:        String::from("wss://socket.polygon.io"),
-      key:               String::new(),
-      ratelimit:         DEFAULT_RATELIMIT,
-      ratelimit_handle:  None
+      api_uri: String::from("https://api.polygon.io"),
+      stream_uri: String::from("wss://socket.polygon.io"),
+      key: String::new(),
+      ratelimit: DEFAULT_RATELIMIT,
+      ratelimit_handle: None
     }
   }
 }

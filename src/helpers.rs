@@ -3,22 +3,22 @@ use serde::{de, de::SeqAccess, Deserialize, Serializer};
 use std::{collections::HashMap, fmt};
 
 pub fn make_params(params: Option<&HashMap<&str, String>>) -> String {
-	if params.is_none() {
-		return String::new();
-	}
-	let params = params.unwrap();
-	let mut res = String::from("?");
-	let kvs = params
+  if params.is_none() {
+    return String::new();
+  }
+  let params = params.unwrap();
+  let mut res = String::from("?");
+  let kvs = params
     .iter()
     .map(|(key, val)| format!("{}={}", key.to_lowercase(), val))
     .collect::<Vec<String>>();
 
-	if kvs.len() == 0 {
-		return String::new();
-	}
+  if kvs.len() == 0 {
+    return String::new();
+  }
 
-	res.push_str(&kvs.join("&"));
-	return res;
+  res.push_str(&kvs.join("&"));
+  return res;
 }
 
 const POLYGON_DATE_FORMAT: &str = "%Y-%m-%d";

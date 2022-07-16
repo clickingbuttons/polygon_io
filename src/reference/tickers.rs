@@ -4,7 +4,10 @@ extern crate ureq;
 use crate::{client::Client, helpers::*, with_param};
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  io::{Error, ErrorKind}
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -105,7 +108,7 @@ impl Client {
   }
 
   pub fn get_all_tickers(&mut self, date: &NaiveDate) -> std::io::Result<Vec<Ticker>> {
-    let limit: usize = 500;
+    let limit: usize = 1000;
     // Use default params since next_page_path does as well
     let mut params = TickersParams::new()
       .market("stocks")
@@ -117,20 +120,18 @@ impl Client {
     loop {
       let page = self.get_tickers(Some(&params.params))?;
       res.extend(page.results.into_iter());
-      if page.next_url.is_none() {
-        break;
-      }
-      let path = page.next_url.unwrap();
-      let param_name = "cursor=";
-      let marker_start: usize = path.find(param_name).unwrap_or_else(|| {
-        panic!("No cursor in {}", path);
-      });
-      let marker_end = match path[marker_start..].find("&") {
-        Some(i) => marker_start + i,
-        None => path.len()
+      match page.next_url {
+        Some(next_url) => {
+          let split = next_url.split("cursor=").collect::<Vec<&str>>();
+          if split.len() != 2 {
+            let msg = format!("no cursor in next_url {}", next_url);
+            return Err(Error::new(ErrorKind::UnexpectedEof, msg));
+          }
+          let cursor = split[1];
+          params = TickersParams::new().cursor(cursor);
+        }
+        None => break
       };
-      let marker = path[marker_start + param_name.len()..marker_end].to_string();
-      params = TickersParams::new().cursor(&marker);
     }
 
     Ok(res)

@@ -1,14 +1,10 @@
 extern crate serde_json;
 extern crate ureq;
 
-use serde_json::to_string;
-use crate::{
-  client::Client,
-  helpers::make_params,
-  with_param
-};
+use crate::{client::Client, helpers::make_params, with_param};
 use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize, Serializer};
+use serde_json::to_string;
 use std::{
   collections::HashMap,
   fmt,
@@ -86,13 +82,13 @@ where
 
 fn to_json<S>(value: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
 where
-	S: Serializer
+  S: Serializer
 {
-	match to_string(value) {
-		Ok(v) => serializer.serialize_str(&v),
-		// TODO: how to map error?
-		Err(e) => panic!("{}", e)
-	}
+  match to_string(value) {
+    Ok(v) => serializer.serialize_str(&v),
+    // TODO: how to map error?
+    Err(e) => panic!("{}", e)
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -119,7 +115,7 @@ pub struct Trade {
   pub correction: u8,
   pub exchange: u8,
   #[serde(rename(deserialize = "trf_id"))]
-	pub trf: Option<u8>,
+  pub trf: Option<u8>
 }
 
 #[derive(Debug, Deserialize, Serialize)]

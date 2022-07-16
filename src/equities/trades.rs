@@ -1,59 +1,19 @@
 extern crate serde_json;
 extern crate ureq;
 
+use serde_json::to_string;
 use crate::{
   client::Client,
-  helpers::{make_params, to_conditions},
+  helpers::make_params,
   with_param
 };
 use chrono::NaiveDate;
-use serde::{de, Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize, Serializer};
 use std::{
   collections::HashMap,
   fmt,
   io::{self, Error, ErrorKind}
 };
-
-// Trade Corrections (NYSE)
-// Modifier	Indicator
-// 00	Regular trade which was not corrected, changed or signified as cancel or error.
-// 01	Original trade which was late corrected (This record contains the original time - HHMM and the corrected data for the trade).
-// 07	Original trade which was later marked as erroreous
-// 08	Original trade which was later cancelled
-// 10	Cancel record (This record follows '08' records)
-// 11	Error record (This record follows '07' records)
-// 12	Correction record (This record follows'01' records and contains the correction time and the original "incorrect" data). The final correction will be published.
-fn to_error<'de, D>(deserializer: D) -> Result<u8, D::Error>
-where
-  D: de::Deserializer<'de>
-{
-  struct JsonNumberVisitor;
-
-  impl<'de> de::Visitor<'de> for JsonNumberVisitor {
-    type Value = u8;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-      formatter.write_str("an int in [0, 1, 7, 8, 10, 11, 12]")
-    }
-
-    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-    where
-      E: de::Error
-    {
-      match v {
-        0 => Ok(0),
-        1 => Ok(1),
-        7 => Ok(7),
-        8 => Ok(8),
-        10 => Ok(10),
-        11 => Ok(11),
-        12 => Ok(12),
-        c => Err(de::Error::custom(&format!("bad correction {}", c)))
-      }
-    }
-  }
-  deserializer.deserialize_any(JsonNumberVisitor)
-}
 
 // Trade ID:
 // Up to 8 char string in 2015
@@ -124,34 +84,42 @@ where
   deserializer.deserialize_any(JsonNumberVisitor)
 }
 
+fn to_json<S>(value: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+where
+	S: Serializer
+{
+	match to_string(value) {
+		Ok(v) => serializer.serialize_str(&v),
+		// TODO: how to map error?
+		Err(e) => panic!("{}", e)
+	}
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
-  #[serde(rename(deserialize = "sip_timestamp"))]
-  pub ts: i64,
-  #[serde(rename(deserialize = "participant_timestamp"))]
-  pub ts_participant: Option<i64>,
-  #[serde(rename(deserialize = "trf_timestamp"))]
-  pub ts_trf: Option<i64>,
-  #[serde(default)]
-  pub symbol: String,
-  #[serde(deserialize_with = "f64_to_u32", default)]
-  pub size: u32,
-  #[serde(default)]
-  pub price: f64,
-  #[serde(deserialize_with = "to_conditions", default)]
-  pub conditions: u32,
-  #[serde(
-    rename(deserialize = "correction"),
-    deserialize_with = "to_error",
-    default
-  )]
-  pub error: u8,
-  pub exchange: u8,
+  pub sequence_number: u64,
   pub tape: u8,
   #[serde(deserialize_with = "to_id", default)]
   pub id: u64,
-  #[serde(rename(deserialize = "sequence_number"))]
-  pub seq_id: u64
+  #[serde(default)]
+  pub ticker: String,
+  #[serde(rename(deserialize = "sip_timestamp"))]
+  pub time: i64,
+  #[serde(rename(deserialize = "participant_timestamp"))]
+  pub time_participant: Option<i64>,
+  #[serde(rename(deserialize = "trf_timestamp"))]
+  pub time_trf: Option<i64>,
+  #[serde(default)]
+  pub price: f64,
+  #[serde(deserialize_with = "f64_to_u32", default)]
+  pub size: u32,
+  #[serde(serialize_with = "to_json", default)]
+  pub conditions: Vec<u8>,
+  #[serde(default)]
+  pub correction: u8,
+  pub exchange: u8,
+  #[serde(rename(deserialize = "trf_id"))]
+	pub trf: Option<u8>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -214,7 +182,7 @@ impl Client {
     }
 
     for row in resp.results.iter_mut() {
-      row.symbol = symbol.to_string();
+      row.ticker = symbol.to_string();
     }
 
     Ok(resp)

@@ -10,16 +10,6 @@ use std::{
 };
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Codes {
-  pub cik:     Option<String>,
-  pub figiuid: Option<String>,
-  pub scfigi:  Option<String>,
-  pub cfigi:   Option<String>,
-  pub figi:    Option<String>
-}
-
-#[derive(Debug, Deserialize, Serialize)]
 pub struct Ticker {
   #[serde(rename(deserialize = "ticker"))]
   pub symbol: String,

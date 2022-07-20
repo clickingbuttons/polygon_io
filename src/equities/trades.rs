@@ -93,8 +93,7 @@ where
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
-  #[serde(default)]
-  pub sequence_number: u64, // 2012-08-01 EEQ missing field `sequence_number`
+  pub sequence_number: Option<u64>, // 2012-08-01 EEQ missing field `sequence_number`
   pub tape: u8,
   #[serde(deserialize_with = "to_id", default)]
   pub id: u64,

@@ -91,10 +91,6 @@ impl Client {
     let mut resp = self.get_response::<GroupedResponse>(&uri)?;
     resp.uri = Some(uri);
 
-    if resp.results.len() == 0 {
-      return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
-    }
-
     // Polygon returns the exchange opening time in milliseconds since epoch
     let ts = date.and_hms(0, 0, 0).timestamp_nanos();
     for row in resp.results.iter_mut() {

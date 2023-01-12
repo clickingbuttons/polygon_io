@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -19,7 +19,7 @@ pub struct MarketsResponse {
 }
 
 impl Client {
-	pub fn get_markets(&mut self) -> std::io::Result<MarketsResponse> {
+	pub fn get_markets(&mut self) -> Result<MarketsResponse> {
 		let uri = format!("{}/v2/reference/markets", self.api_uri);
 
 		let resp = self.get_response::<MarketsResponse>(&uri)?;

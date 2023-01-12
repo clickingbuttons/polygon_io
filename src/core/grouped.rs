@@ -2,9 +2,9 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{client::Client, helpers::make_params, with_param};
+use crate::{client::{Client, Result}, helpers::make_params, with_param};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, io};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -74,7 +74,7 @@ impl Client {
 		market: Market,
 		date: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> io::Result<GroupedResponse> {
+	) -> Result<GroupedResponse> {
 		let uri = format!(
 			"{}/v2/aggs/grouped/locale/{}/market/{}/{}{}",
 			self.api_uri,

@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -28,7 +28,7 @@ pub struct SplitsResponse {
 }
 
 impl Client {
-	pub fn get_splits(&mut self, symbol: &str) -> std::io::Result<SplitsResponse> {
+	pub fn get_splits(&mut self, symbol: &str) -> Result<SplitsResponse> {
 		let uri = format!("{}/v2/reference/splits/{}", self.api_uri, symbol);
 
 		let resp = self.get_response::<SplitsResponse>(&uri)?;

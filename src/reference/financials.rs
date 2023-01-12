@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_DATE: &str = "1970-01-01";
@@ -262,7 +262,7 @@ pub struct FinancialsResponse {
 }
 
 impl Client {
-	pub fn get_financials(&mut self, symbol: &str) -> std::io::Result<FinancialsResponse> {
+	pub fn get_financials(&mut self, symbol: &str) -> Result<FinancialsResponse> {
 		let uri = format!("{}/v2/reference/financials/{}", self.api_uri, symbol);
 
 		let resp = self.get_response::<FinancialsResponse>(&uri)?;

@@ -1,12 +1,9 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::make_params, with_param};
+use crate::{client::{Client, Result}, helpers::make_params, with_param};
 use serde::{Deserialize, Serialize};
-use std::{
-	collections::HashMap,
-	io::{self, Error, ErrorKind}
-};
+use std:: collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {
@@ -74,7 +71,7 @@ impl Client {
 		&mut self,
 		symbol: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> io::Result<NBBOsResponse> {
+	) -> Result<NBBOsResponse> {
 		let uri = format!(
 			"{}/v3/quotes/{}{}",
 			self.api_uri,
@@ -84,10 +81,6 @@ impl Client {
 
 		let mut resp = self.get_response::<NBBOsResponse>(&uri)?;
 		resp.uri = Some(uri);
-
-		if resp.results.len() == 0 {
-			return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
-		}
 
 		// Polygon returns the exchange opening time in nanoseconds since epoch
 		for row in resp.results.iter_mut() {

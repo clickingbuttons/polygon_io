@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::*, with_param};
+use crate::{client::{Client, Result, PolygonError}, helpers::*, with_param};
 use serde::{Deserialize, Serialize};
 use std::{
 	collections::HashMap,
@@ -74,7 +74,7 @@ impl Client {
 	pub fn get_tickers(
 		&mut self,
 		params: Option<&HashMap<&str, String>>
-	) -> std::io::Result<TickersResponse> {
+	) -> Result<TickersResponse> {
 		let uri = format!(
 			"{}/v3/reference/tickers{}",
 			self.api_uri,
@@ -86,7 +86,7 @@ impl Client {
 		Ok(resp)
 	}
 
-	pub fn get_all_tickers(&mut self, date: &str) -> std::io::Result<Vec<Ticker>> {
+	pub fn get_all_tickers(&mut self, date: &str) -> Result<Vec<Ticker>> {
 		let limit: usize = 1000;
 		// Use default params since next_page_path does as well
 		let mut params = TickersParams::new()
@@ -104,7 +104,8 @@ impl Client {
 					let split = next_url.split("cursor=").collect::<Vec<&str>>();
 					if split.len() != 2 {
 						let msg = format!("no cursor in next_url {}", next_url);
-						return Err(Error::new(ErrorKind::UnexpectedEof, msg));
+                        let io_error = Error::new(ErrorKind::UnexpectedEof, msg);
+						return Err(PolygonError::IoError(io_error));
 					}
 					let cursor = split[1];
 					params = TickersParams::new().cursor(cursor);

@@ -2,12 +2,9 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{client::Client, helpers::make_params, with_param};
+use crate::{client::{Client, Result}, helpers::make_params, with_param};
 use serde::{Deserialize, Serialize};
-use std::{
-	collections::HashMap,
-	io::{self, Error, ErrorKind}
-};
+use std:: collections::HashMap;
 
 #[derive(Debug)]
 pub enum Timespan {
@@ -63,7 +60,7 @@ impl Client {
 		from: &str,
 		to: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> io::Result<AggResponse> {
+	) -> Result<AggResponse> {
 		let uri = format!(
 			"{}/v2/aggs/ticker/{}/range/{}/{}/{}/{}{}",
 			self.api_uri,
@@ -75,10 +72,6 @@ impl Client {
 			make_params(params),
 		);
 		let mut resp = self.get_response::<AggResponse>(&uri)?;
-
-		if resp.results.len() == 0 {
-			return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
-		}
 
 		let is_equity = !symbol.contains(":");
 		let mut min_ts = i64::MAX;
@@ -109,7 +102,6 @@ impl Client {
 mod aggs {
 	use super::Timespan;
 	use crate::{client::Client, core::aggs::AggsParams};
-	use std::io::ErrorKind;
 
 	#[test]
 	fn aapl() {
@@ -139,47 +131,5 @@ mod aggs {
 				Some(&params)
 			)
 			.unwrap();
-	}
-
-	#[test]
-	fn no_range_errors() {
-		let mut client = Client::new().unwrap();
-		let params = AggsParams::new().limit(50_000).params;
-		for _ in 0..10 {
-			match client.get_aggs(
-				"AAPL",
-				1,
-				Timespan::Minute,
-				"2008-11-01",
-				"2008-12-01",
-				Some(&params)
-			) {
-				Ok(_v) => {}
-				Err(e) => match e.kind() {
-					ErrorKind::BrokenPipe => {
-						panic!("Range error {}", e.to_string());
-					}
-					_ => {}
-				}
-			};
-		}
-	}
-
-	#[test]
-	fn empty_results() {
-		let mut client = Client::new().unwrap();
-		let sym = String::from("CINpJ");
-		let params = AggsParams::new().params;
-		match client.get_aggs(
-			&sym,
-			1,
-			Timespan::Minute,
-			"2004-03-01",
-			"2004-03-31",
-			Some(&params)
-		) {
-			Ok(_) => panic!("CINpJ should not have agg1m in 2004-03"),
-			Err(e) => assert_eq!(e.kind(), ErrorKind::UnexpectedEof)
-		}
 	}
 }

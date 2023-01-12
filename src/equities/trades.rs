@@ -1,13 +1,13 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::make_params, with_param};
+use crate::{client::{Client, PolygonError}, helpers::make_params, with_param};
 use serde::{de, Deserialize, Serialize, Serializer};
 use serde_json::to_string;
 use std::{
 	collections::HashMap,
 	fmt,
-	io::{self, Error, ErrorKind}
+	io::{Error, ErrorKind}
 };
 
 // Trade ID:
@@ -161,7 +161,7 @@ impl Client {
 		&mut self,
 		symbol: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> io::Result<TradesResponse> {
+	) -> Result<TradesResponse, PolygonError> {
 		let uri = format!(
 			"{}/v3/trades/{}{}",
 			self.api_uri,
@@ -172,10 +172,6 @@ impl Client {
 		let mut resp = self.get_response::<TradesResponse>(&uri)?;
 		resp.uri = Some(uri);
 
-		if resp.results.len() == 0 {
-			return Err(Error::new(ErrorKind::UnexpectedEof, "Results is empty"));
-		}
-
 		for row in resp.results.iter_mut() {
 			row.ticker = symbol.to_string();
 		}
@@ -183,7 +179,7 @@ impl Client {
 		Ok(resp)
 	}
 
-	pub fn get_all_trades(&mut self, symbol: &str, date: &str) -> io::Result<Vec<Trade>> {
+	pub fn get_all_trades(&mut self, symbol: &str, date: &str) -> Result<Vec<Trade>, PolygonError> {
 		let limit: usize = 50_000;
 		let mut params = TradesParams::new().limit(limit).timestamp(date);
 		let mut res = Vec::<Trade>::new();
@@ -195,7 +191,7 @@ impl Client {
 					let split = next_url.split("cursor=").collect::<Vec<&str>>();
 					if split.len() != 2 {
 						let msg = format!("no cursor in next_url {}", next_url);
-						return Err(Error::new(ErrorKind::UnexpectedEof, msg));
+						return Err(PolygonError::IoError(Error::new(ErrorKind::UnexpectedEof, msg)));
 					}
 					let cursor = split[1];
 					params = TradesParams::new().cursor(cursor);

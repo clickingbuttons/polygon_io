@@ -1,6 +1,5 @@
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
-use std::io;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MarketHolidayResponse {
@@ -13,7 +12,7 @@ pub struct MarketHolidayResponse {
 }
 
 impl Client {
-	pub fn get_market_status_upcoming(&mut self) -> io::Result<Vec<MarketHolidayResponse>> {
+	pub fn get_market_status_upcoming(&mut self) -> Result<Vec<MarketHolidayResponse>> {
 		let uri = format!("{}/v1/marketstatus/upcoming", self.api_uri);
 		let resp = self.get_response::<Vec<MarketHolidayResponse>>(&uri)?;
 

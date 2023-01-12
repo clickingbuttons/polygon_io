@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::Client, helpers::*, with_param};
+use crate::{client::{Client, Result}, helpers::*, with_param};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -78,7 +78,7 @@ impl Client {
 		&mut self,
 		ticker: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> std::io::Result<TickersResponse> {
+	) -> Result<TickersResponse> {
 		let uri = format!(
 			"{}/v3/reference/tickers/{}{}",
 			self.api_uri,

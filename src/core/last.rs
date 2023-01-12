@@ -2,9 +2,8 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
-use std::io::{self, Error, ErrorKind};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,18 +19,11 @@ pub struct PrevResponse {
 }
 
 impl Client {
-	pub fn get_prev(&mut self, symbol: &str) -> io::Result<PrevResponse> {
+	pub fn get_prev(&mut self, symbol: &str) -> Result<PrevResponse> {
 		let uri = format!("{}/v2/aggs/ticker/{}/prev", self.api_uri, symbol);
 
 		let mut resp = self.get_response::<PrevResponse>(&uri)?;
 		resp.uri = Some(uri);
-
-		if resp.results.len() != 1 {
-			return Err(Error::new(
-				ErrorKind::UnexpectedEof,
-				format!("Results has length {} (expected 1)", resp.results.len())
-			));
-		}
 
 		let is_equity = !symbol.contains(":");
 		// Polygon returns GMT milliseconds for this endpoint

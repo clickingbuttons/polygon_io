@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::client::Client;
+use crate::client::{Client, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -19,7 +19,7 @@ pub struct LocalesResponse {
 }
 
 impl Client {
-	pub fn get_locales(&mut self) -> std::io::Result<LocalesResponse> {
+	pub fn get_locales(&mut self) -> Result<LocalesResponse> {
 		let uri = format!("{}/v2/reference/locales", self.api_uri);
 
 		let resp = self.get_response::<LocalesResponse>(&uri)?;

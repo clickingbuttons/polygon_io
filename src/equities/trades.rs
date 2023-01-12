@@ -162,7 +162,7 @@ impl<'a> TradesParams<'a> {
 
 impl Client {
 	pub fn get_trades(
-		&mut self,
+		&self,
 		symbol: &str,
 		params: Option<&HashMap<&str, String>>
 	) -> Result<TradesResponse, PolygonError> {
@@ -183,7 +183,7 @@ impl Client {
 		Ok(resp)
 	}
 
-	pub fn get_all_trades(&mut self, symbol: &str, date: &str) -> Result<Vec<Trade>, PolygonError> {
+	pub fn get_all_trades(&self, symbol: &str, date: &str) -> Result<Vec<Trade>, PolygonError> {
 		let limit: usize = 50_000;
 		let mut params = TradesParams::new().limit(limit).timestamp(date);
 		let mut res = Vec::<Trade>::new();
@@ -217,7 +217,7 @@ mod trades {
 
 	#[test]
 	fn appl_2004_works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let params = TradesParams::new()
 			.timestamp("2004-01-02")
 			.limit(50_000)
@@ -229,7 +229,7 @@ mod trades {
 
 	#[test]
 	fn limit_works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let limit = 500;
 		let params = TradesParams::new()
 			.limit(limit)
@@ -241,7 +241,7 @@ mod trades {
 
 	#[test]
 	fn get_all_works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let trades = client.get_all_trades("AAPL", "2020-01-02").unwrap();
 		let count = 283_504;
 		assert_eq!(trades.len(), count);

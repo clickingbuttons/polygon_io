@@ -19,7 +19,7 @@ pub struct MarketsResponse {
 }
 
 impl Client {
-	pub fn get_markets(&mut self) -> Result<MarketsResponse> {
+	pub fn get_markets(&self) -> Result<MarketsResponse> {
 		let uri = format!("{}/v2/reference/markets", self.api_uri);
 
 		let resp = self.get_response::<MarketsResponse>(&uri)?;
@@ -34,7 +34,7 @@ mod markets {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let markets = client.get_markets().unwrap();
 		assert!(markets
 			.results

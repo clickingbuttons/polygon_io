@@ -73,7 +73,7 @@ impl<'a> GroupedParams<'a> {
 
 impl Client {
 	pub fn get_grouped(
-		&mut self,
+		&self,
 		locale: Locale,
 		market: Market,
 		date: &str,
@@ -102,7 +102,7 @@ mod grouped {
 
 	#[test]
 	fn start() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let params = GroupedParams::new().unadjusted(true).params;
 		let grouped = client
 			.get_grouped(Locale::US, Market::Stocks, "2004-01-02", Some(&params))
@@ -114,7 +114,7 @@ mod grouped {
 
 	#[test]
 	fn no_bad_ranges() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let params = GroupedParams::new().unadjusted(true).params;
 		for _ in 0..50 {
 			client
@@ -125,7 +125,7 @@ mod grouped {
 
 	#[test]
 	fn no_garbage_tickers() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let bad_dates = vec![
 			"2020-04-07",
 			"2020-04-08",
@@ -151,7 +151,7 @@ mod grouped {
 
 	#[test]
 	fn no_missing_vw() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let bad_dates = vec![
 			"2020-04-07",
 			"2020-04-08",

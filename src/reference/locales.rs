@@ -19,7 +19,7 @@ pub struct LocalesResponse {
 }
 
 impl Client {
-	pub fn get_locales(&mut self) -> Result<LocalesResponse> {
+	pub fn get_locales(&self) -> Result<LocalesResponse> {
 		let uri = format!("{}/v2/reference/locales", self.api_uri);
 
 		let resp = self.get_response::<LocalesResponse>(&uri)?;
@@ -34,7 +34,7 @@ mod locales {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let locales = client.get_locales().unwrap();
 		assert!(locales.results.len() > 17);
 		assert!(locales

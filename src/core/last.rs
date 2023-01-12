@@ -19,7 +19,7 @@ pub struct PrevResponse {
 }
 
 impl Client {
-	pub fn get_prev(&mut self, symbol: &str) -> Result<PrevResponse> {
+	pub fn get_prev(&self, symbol: &str) -> Result<PrevResponse> {
 		let uri = format!("{}/v2/aggs/ticker/{}/prev", self.api_uri, symbol);
 
 		let mut resp = self.get_response::<PrevResponse>(&uri)?;
@@ -44,7 +44,7 @@ mod prev {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let prev = client.get_prev("AAPL").unwrap();
 		assert_eq!(prev.results.len(), 1);
 	}

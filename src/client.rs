@@ -1,12 +1,10 @@
 use backoff::ExponentialBackoff;
 use flate2::read::GzDecoder;
-use ratelimit;
 use serde::de::DeserializeOwned;
 use serde_json;
 use std::{
 	env, fmt,
 	io::{self, ErrorKind, Read},
-	thread,
 	time::Duration
 };
 use ureq::{Agent, AgentBuilder};
@@ -15,10 +13,10 @@ use ureq::{Agent, AgentBuilder};
 pub enum PolygonError {
 	MissingEnv(String),
 	RequestError(ureq::Error),
-	BackoffError(Box<backoff::Error<PolygonError>>),
 	IoError(io::Error),
 	SerdeError(serde_json::Error),
-	ResponseError(backoff::Error<io::Error>)
+	ResponseError(backoff::Error<io::Error>),
+	EmptyResponse()
 }
 
 impl std::error::Error for PolygonError {}
@@ -28,10 +26,10 @@ impl fmt::Display for PolygonError {
 		match self {
 			PolygonError::MissingEnv(e) => write!(f, "invalid config {}", e),
 			PolygonError::RequestError(e) => write!(f, "request error {}", e),
-			PolygonError::BackoffError(e) => write!(f, "backoff error {}", e),
 			PolygonError::IoError(e) => write!(f, "io error {}", e),
 			PolygonError::SerdeError(e) => write!(f, "serde error {}", e),
-			PolygonError::ResponseError(e) => write!(f, "response error {}", e)
+			PolygonError::ResponseError(e) => write!(f, "response error {}", e),
+			PolygonError::EmptyResponse() => write!(f, "empty response")
 		}
 	}
 }
@@ -40,36 +38,14 @@ pub type Result<T> = std::result::Result<T, PolygonError>;
 
 #[derive(Clone)]
 pub struct Client {
-	pub agent: Agent,
-	pub api_uri: String,
+	pub agent:      Agent,
+	pub api_uri:    String,
 	pub stream_uri: String,
-	pub key: String,
-	pub ratelimit: u32,
-	pub ratelimit_handle: ratelimit::Handle
-}
-
-fn make_ratelimit(ratelimit: u32) -> ratelimit::Handle {
-	let mut ratelimit = ratelimit::Builder::new()
-		.capacity(1)
-		.quantum(1)
-		.frequency(ratelimit)
-		.build();
-	let limit = ratelimit.make_handle();
-	thread::spawn(move || {
-		ratelimit.run();
-	});
-
-	limit
+	pub key:        String
 }
 
 impl Client {
 	pub fn new() -> Result<Client> {
-		let ratelimit: u32 = env::var("POLYGON_RATELIMIT")
-        // Polygon's API starts ratelimiting at around 100req/s
-      .unwrap_or("95".to_string())
-      .parse::<u32>()
-      .expect("Ratelimit must be an unsigned int");
-
 		let key =
 			env::var("POLYGON_KEY").map_err(|_| PolygonError::MissingEnv("POLYGON_KEY".to_string()))?;
 		let api_uri = env::var("POLYGON_BASE").unwrap_or(String::from("https://api.polygon.io"));
@@ -83,61 +59,74 @@ impl Client {
 			agent,
 			key,
 			api_uri,
-			stream_uri,
-			ratelimit,
-			ratelimit_handle: make_ratelimit(ratelimit)
+			stream_uri
 		})
 	}
 
-	pub fn get_ratelimit(&self) -> u32 { self.ratelimit }
-
-	pub fn get_response<T: DeserializeOwned>(&mut self, uri: &str) -> Result<T> {
+	pub fn get_response<T: DeserializeOwned>(&self, uri: &str) -> Result<T> {
 		let op = || -> std::result::Result<T, backoff::Error<PolygonError>> {
-			self.ratelimit_handle.wait();
 			let resp = self
 				.agent
 				.get(&uri)
 				.set("accept-encoding", "gzip")
 				.set("authorization", &format!("Bearer {}", self.key))
-				.call();
-			if let Err(e) = resp {
-				return Err(backoff::Error::transient(PolygonError::RequestError(e)));
-			}
-			let resp = resp.unwrap();
+				.call()
+				.map_err(|e| match e {
+					// Ureq will raise error here if status >= 400
+					ureq::Error::Status(status, _resp) => match status {
+						404 => backoff::Error::permanent(PolygonError::EmptyResponse()),
+						c => {
+							let io_error = PolygonError::IoError(io::Error::new(
+								ErrorKind::NotConnected,
+								format!("server returned {}", c)
+							));
+							backoff::Error::permanent(io_error)
+						}
+					},
+					ureq::Error::Transport(e) => {
+						backoff::Error::transient(PolygonError::RequestError(ureq::Error::Transport(e)))
+					}
+				})?;
 
-			let status = resp.status();
-			if status != 200 {
-				return Err(backoff::Error::transient(PolygonError::IoError(
-					io::Error::new(
-						ErrorKind::NotConnected,
-						format!("Server returned {}", status)
-					)
-				)));
+			if resp.status() != 200 {
+				let io_error = PolygonError::IoError(io::Error::new(
+					ErrorKind::NotConnected,
+					format!("server returned {}", resp.status())
+				));
+				return Err(backoff::Error::permanent(io_error));
 			}
 
 			let content_encoding = resp.header("content-encoding");
 			if content_encoding.is_none() || content_encoding.unwrap() != "gzip" {
 				return resp
 					.into_json::<T>()
-					.map_err(|e| backoff::Error::permanent(PolygonError::IoError(e)));
+					.map_err(|e| PolygonError::IoError(e))
+					.map_err(backoff::Error::Permanent);
 			}
 
 			// Decompress
+			// TODO: capacity based on Content-Length
 			let mut bytes: Vec<u8> = Vec::new();
-			resp
-				.into_reader()
-				.read_to_end(&mut bytes)
-				.map_err(|e| PolygonError::IoError(e))?;
+			resp.into_reader().read_to_end(&mut bytes).map_err(|e| {
+				eprintln!("3 {}", e);
+				return PolygonError::IoError(e);
+			})?;
 
 			let mut decoder = GzDecoder::new(&bytes[..]);
 			let mut body = String::new();
 			decoder.read_to_string(&mut body).unwrap();
 
 			return serde_json::from_str::<T>(&body)
-				.map_err(|e| backoff::Error::permanent(PolygonError::SerdeError(e)));
+				.map_err(|e| backoff::Error::Permanent(PolygonError::SerdeError(e)));
 		};
 
 		let backoff = ExponentialBackoff::default();
-		backoff::retry(backoff, op).map_err(|e| PolygonError::BackoffError(Box::new(e)))
+		backoff::retry(backoff, op).map_err(|e| match e {
+			backoff::Error::Transient {
+				err,
+				retry_after: _
+			} => err,
+			backoff::Error::Permanent(err) => err
+		})
 	}
 }

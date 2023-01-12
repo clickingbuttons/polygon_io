@@ -24,7 +24,7 @@ pub struct MarketStatusNowResponse {
 }
 
 impl Client {
-	pub fn get_market_status_now(&mut self) -> Result<MarketStatusNowResponse> {
+	pub fn get_market_status_now(&self) -> Result<MarketStatusNowResponse> {
 		let uri = format!("{}/v1/marketstatus/now", self.api_uri);
 		let resp = self.get_response::<MarketStatusNowResponse>(&uri)?;
 
@@ -38,7 +38,7 @@ mod market_status_now {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 
 		let resp = client.get_market_status_now();
 		assert!(resp.is_ok());

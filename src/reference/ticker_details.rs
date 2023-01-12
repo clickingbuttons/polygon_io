@@ -79,7 +79,7 @@ impl<'a> TickerDetailsParams<'a> {
 
 impl Client {
 	pub fn get_ticker_details(
-		&mut self,
+		&self,
 		ticker: &str,
 		params: Option<&HashMap<&str, String>>
 	) -> Result<TickersResponse> {
@@ -98,20 +98,36 @@ impl Client {
 
 #[cfg(test)]
 mod tickers {
-	use crate::{client::Client, reference::ticker_details::TickerDetailsParams};
+	use crate::{
+		client::{Client, PolygonError},
+		reference::ticker_details::TickerDetailsParams
+	};
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let resp = client.get_ticker_details("AAPL", None).unwrap();
 		assert_eq!(resp.results.market, "stocks");
 	}
 
 	#[test]
 	fn works_day() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let params = TickerDetailsParams::new().date("2004-01-02").params;
 		let resp = client.get_ticker_details("AAPL", Some(&params)).unwrap();
 		assert_eq!(resp.results.market, "stocks");
+	}
+
+	#[test]
+	fn works_empty() {
+		let client = Client::new().unwrap();
+		let params = TickerDetailsParams::new().date("2004-01-02").params;
+		let resp = client
+			.get_ticker_details("DOESN'T EXIST", Some(&params))
+			.unwrap_err();
+		match resp {
+			PolygonError::EmptyResponse() => {}
+			e => panic!("bad error type {}", e)
+		};
 	}
 }

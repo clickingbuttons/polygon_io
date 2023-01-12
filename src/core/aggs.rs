@@ -57,7 +57,7 @@ impl<'a> AggsParams<'a> {
 
 impl Client {
 	pub fn get_aggs(
-		&mut self,
+		&self,
 		symbol: &str,
 		multiplier: i64,
 		timespan: Timespan,
@@ -109,7 +109,7 @@ mod aggs {
 
 	#[test]
 	fn aapl() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let sym = String::from("AAPL");
 		let resp = client
 			.get_aggs(&sym, 1, Timespan::Minute, "2020-11-05", "2020-11-05", None)
@@ -122,7 +122,7 @@ mod aggs {
 
 	#[test]
 	fn mac() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let sym = String::from("MAC");
 		let params = AggsParams::new().unadjusted(true).params;
 		client

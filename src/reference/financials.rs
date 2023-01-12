@@ -262,7 +262,7 @@ pub struct FinancialsResponse {
 }
 
 impl Client {
-	pub fn get_financials(&mut self, symbol: &str) -> Result<FinancialsResponse> {
+	pub fn get_financials(&self, symbol: &str) -> Result<FinancialsResponse> {
 		let uri = format!("{}/v2/reference/financials/{}", self.api_uri, symbol);
 
 		let resp = self.get_response::<FinancialsResponse>(&uri)?;
@@ -277,7 +277,7 @@ mod financials {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let financials = client.get_financials("AAPL").unwrap();
 		assert!(financials.results.len() > 400);
 	}

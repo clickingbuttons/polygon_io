@@ -24,7 +24,7 @@ pub struct DividendsResponse {
 }
 
 impl Client {
-	pub fn get_dividends(&mut self, symbol: &str) -> Result<DividendsResponse> {
+	pub fn get_dividends(&self, symbol: &str) -> Result<DividendsResponse> {
 		let uri = format!("{}/v2/reference/dividends/{}", self.api_uri, symbol);
 
 		let resp = self.get_response::<DividendsResponse>(&uri)?;
@@ -39,7 +39,7 @@ mod dividends {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let splits = client.get_dividends("AAPL").unwrap();
 		assert!(splits.results.len() > 60);
 	}

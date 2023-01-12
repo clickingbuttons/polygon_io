@@ -20,7 +20,7 @@ pub struct TypesResponse {
 }
 
 impl Client {
-	pub fn get_types(&mut self) -> Result<TypesResponse> {
+	pub fn get_types(&self) -> Result<TypesResponse> {
 		let uri = format!("{}/v2/reference/types", self.api_uri);
 
 		let resp = self.get_response::<TypesResponse>(&uri)?;
@@ -35,7 +35,7 @@ mod types {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let types = client.get_types().unwrap();
 		assert_eq!(
 			types.results.types.get("CS").unwrap(),

@@ -75,7 +75,7 @@ impl<'a> TickersParams<'a> {
 }
 
 impl Client {
-	pub fn get_tickers(&mut self, params: Option<&HashMap<&str, String>>) -> Result<TickersResponse> {
+	pub fn get_tickers(&self, params: Option<&HashMap<&str, String>>) -> Result<TickersResponse> {
 		let uri = format!(
 			"{}/v3/reference/tickers{}",
 			self.api_uri,
@@ -87,7 +87,7 @@ impl Client {
 		Ok(resp)
 	}
 
-	pub fn get_all_tickers(&mut self, date: &str) -> Result<Vec<Ticker>> {
+	pub fn get_all_tickers(&self, date: &str) -> Result<Vec<Ticker>> {
 		let limit: usize = 1000;
 		// Use default params since next_page_path does as well
 		let mut params = TickersParams::new()
@@ -125,14 +125,14 @@ mod tickers {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let resp = client.get_tickers(None).unwrap();
 		assert_eq!(resp.results.len(), 100);
 	}
 
 	#[test]
 	fn works_day() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let results = client.get_all_tickers("2004-01-02").unwrap();
 		assert_eq!(results.len(), 8163);
 	}

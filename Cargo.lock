@@ -201,7 +201,6 @@ version = "4.1.0"
 dependencies = [
  "backoff",
  "flate2",
- "ratelimit",
  "serde",
  "serde_json",
  "ureq",
@@ -260,12 +259,6 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
 ]
-
-[[package]]
-name = "ratelimit"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c4777eb47471c2a42bee8b553b22b8e5c496f657dc6f8b8e29bd69662f31e7e"
 
 [[package]]
 name = "ring"

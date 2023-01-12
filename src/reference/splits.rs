@@ -28,7 +28,7 @@ pub struct SplitsResponse {
 }
 
 impl Client {
-	pub fn get_splits(&mut self, symbol: &str) -> Result<SplitsResponse> {
+	pub fn get_splits(&self, symbol: &str) -> Result<SplitsResponse> {
 		let uri = format!("{}/v2/reference/splits/{}", self.api_uri, symbol);
 
 		let resp = self.get_response::<SplitsResponse>(&uri)?;
@@ -43,7 +43,7 @@ mod splits {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let splits = client.get_splits("AAPL").unwrap();
 		assert!(splits.results.len() > 3);
 	}

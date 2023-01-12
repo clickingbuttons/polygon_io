@@ -72,7 +72,7 @@ impl<'a> NBBOsParams<'a> {
 
 impl Client {
 	pub fn get_nbbo(
-		&mut self,
+		&self,
 		symbol: &str,
 		params: Option<&HashMap<&str, String>>
 	) -> Result<NBBOsResponse> {
@@ -101,7 +101,7 @@ mod nbbo {
 
 	#[test]
 	fn works() {
-		let mut client = Client::new().unwrap();
+		let client = Client::new().unwrap();
 		let limit = 500;
 		let params = NBBOsParams::new()
 			.timestamp("2005-01-03")

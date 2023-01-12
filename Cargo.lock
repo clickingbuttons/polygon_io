@@ -197,7 +197,7 @@ checksum = "12295df4f294471248581bc09bef3c38a5e46f1e36d6a37353621a0c6c357e1f"
 
 [[package]]
 name = "polygon_io"
-version = "4.1.0"
+version = "4.2.0"
 dependencies = [
  "backoff",
  "flate2",

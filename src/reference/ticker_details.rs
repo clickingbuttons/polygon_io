@@ -99,7 +99,7 @@ impl Client {
 #[cfg(test)]
 mod tickers {
 	use crate::{
-		client::{Client, PolygonError},
+		client::{Client, Error},
 		reference::ticker_details::TickerDetailsParams
 	};
 
@@ -126,7 +126,7 @@ mod tickers {
 			.get_ticker_details("DOESN'T EXIST", Some(&params))
 			.unwrap_err();
 		match resp {
-			PolygonError::EmptyResponse() => {}
+			Error::EmptyResponse() => {}
 			e => panic!("bad error type {}", e)
 		};
 	}

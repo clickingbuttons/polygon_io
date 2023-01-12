@@ -2,15 +2,12 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::{
-	client::{Client, PolygonError, Result},
+	client::{Client, Error, Result},
 	helpers::*,
 	with_param
 };
 use serde::{Deserialize, Serialize};
-use std::{
-	collections::HashMap,
-	io::{Error, ErrorKind}
-};
+use std::{collections::HashMap, io};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Ticker {
@@ -105,8 +102,8 @@ impl Client {
 					let split = next_url.split("cursor=").collect::<Vec<&str>>();
 					if split.len() != 2 {
 						let msg = format!("no cursor in next_url {}", next_url);
-						let io_error = Error::new(ErrorKind::UnexpectedEof, msg);
-						return Err(PolygonError::IoError(io_error));
+						let io_error = io::Error::new(io::ErrorKind::UnexpectedEof, msg);
+						return Err(Error::IoError(io_error));
 					}
 					let cursor = split[1];
 					params = TickersParams::new().cursor(cursor);

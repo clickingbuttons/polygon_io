@@ -10,7 +10,7 @@ use std::{
 use ureq::{Agent, AgentBuilder};
 
 #[derive(Debug)]
-pub enum PolygonError {
+pub enum Error {
 	MissingEnv(String),
 	RequestError(ureq::Error),
 	IoError(io::Error),
@@ -19,22 +19,22 @@ pub enum PolygonError {
 	EmptyResponse()
 }
 
-impl std::error::Error for PolygonError {}
+impl std::error::Error for Error {}
 
-impl fmt::Display for PolygonError {
+impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			PolygonError::MissingEnv(e) => write!(f, "invalid config {}", e),
-			PolygonError::RequestError(e) => write!(f, "request error {}", e),
-			PolygonError::IoError(e) => write!(f, "io error {}", e),
-			PolygonError::SerdeError(e) => write!(f, "serde error {}", e),
-			PolygonError::ResponseError(e) => write!(f, "response error {}", e),
-			PolygonError::EmptyResponse() => write!(f, "empty response")
+			Error::MissingEnv(e) => write!(f, "invalid config {}", e),
+			Error::RequestError(e) => write!(f, "request error {}", e),
+			Error::IoError(e) => write!(f, "io error {}", e),
+			Error::SerdeError(e) => write!(f, "serde error {}", e),
+			Error::ResponseError(e) => write!(f, "response error {}", e),
+			Error::EmptyResponse() => write!(f, "empty response")
 		}
 	}
 }
 
-pub type Result<T> = std::result::Result<T, PolygonError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone)]
 pub struct Client {
@@ -46,8 +46,7 @@ pub struct Client {
 
 impl Client {
 	pub fn new() -> Result<Client> {
-		let key =
-			env::var("POLYGON_KEY").map_err(|_| PolygonError::MissingEnv("POLYGON_KEY".to_string()))?;
+		let key = env::var("POLYGON_KEY").map_err(|_| Error::MissingEnv("POLYGON_KEY".to_string()))?;
 		let api_uri = env::var("POLYGON_BASE").unwrap_or(String::from("https://api.polygon.io"));
 		let stream_uri = env::var("POLYGON_BASE_WS").unwrap_or(String::from("wss://socket.polygon.io"));
 		let agent: Agent = AgentBuilder::new()
@@ -64,7 +63,7 @@ impl Client {
 	}
 
 	pub fn get_response<T: DeserializeOwned>(&self, uri: &str) -> Result<T> {
-		let op = || -> std::result::Result<T, backoff::Error<PolygonError>> {
+		let op = || -> std::result::Result<T, backoff::Error<Error>> {
 			let resp = self
 				.agent
 				.get(&uri)
@@ -74,9 +73,9 @@ impl Client {
 				.map_err(|e| match e {
 					// Ureq will raise error here if status >= 400
 					ureq::Error::Status(status, _resp) => match status {
-						404 => backoff::Error::permanent(PolygonError::EmptyResponse()),
+						404 => backoff::Error::permanent(Error::EmptyResponse()),
 						c => {
-							let io_error = PolygonError::IoError(io::Error::new(
+							let io_error = Error::IoError(io::Error::new(
 								ErrorKind::NotConnected,
 								format!("server returned {}", c)
 							));
@@ -84,12 +83,12 @@ impl Client {
 						}
 					},
 					ureq::Error::Transport(e) => {
-						backoff::Error::transient(PolygonError::RequestError(ureq::Error::Transport(e)))
+						backoff::Error::transient(Error::RequestError(ureq::Error::Transport(e)))
 					}
 				})?;
 
 			if resp.status() != 200 {
-				let io_error = PolygonError::IoError(io::Error::new(
+				let io_error = Error::IoError(io::Error::new(
 					ErrorKind::NotConnected,
 					format!("server returned {}", resp.status())
 				));
@@ -100,7 +99,7 @@ impl Client {
 			if content_encoding.is_none() || content_encoding.unwrap() != "gzip" {
 				return resp
 					.into_json::<T>()
-					.map_err(|e| PolygonError::IoError(e))
+					.map_err(|e| Error::IoError(e))
 					.map_err(backoff::Error::Permanent);
 			}
 
@@ -109,7 +108,7 @@ impl Client {
 			let mut bytes: Vec<u8> = Vec::new();
 			resp.into_reader().read_to_end(&mut bytes).map_err(|e| {
 				eprintln!("3 {}", e);
-				return PolygonError::IoError(e);
+				return Error::IoError(e);
 			})?;
 
 			let mut decoder = GzDecoder::new(&bytes[..]);
@@ -117,7 +116,7 @@ impl Client {
 			decoder.read_to_string(&mut body).unwrap();
 
 			return serde_json::from_str::<T>(&body)
-				.map_err(|e| backoff::Error::Permanent(PolygonError::SerdeError(e)));
+				.map_err(|e| backoff::Error::Permanent(Error::SerdeError(e)));
 		};
 
 		let backoff = ExponentialBackoff::default();

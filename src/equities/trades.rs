@@ -2,17 +2,13 @@ extern crate serde_json;
 extern crate ureq;
 
 use crate::{
-	client::{Client, PolygonError},
+	client::{Client, Error},
 	helpers::make_params,
 	with_param
 };
 use serde::{de, Deserialize, Serialize, Serializer};
 use serde_json::to_string;
-use std::{
-	collections::HashMap,
-	fmt,
-	io::{Error, ErrorKind}
-};
+use std::{collections::HashMap, fmt, io};
 
 // Trade ID:
 // Up to 8 char string in 2015
@@ -165,7 +161,7 @@ impl Client {
 		&self,
 		symbol: &str,
 		params: Option<&HashMap<&str, String>>
-	) -> Result<TradesResponse, PolygonError> {
+	) -> Result<TradesResponse, Error> {
 		let uri = format!(
 			"{}/v3/trades/{}{}",
 			self.api_uri,
@@ -183,7 +179,7 @@ impl Client {
 		Ok(resp)
 	}
 
-	pub fn get_all_trades(&self, symbol: &str, date: &str) -> Result<Vec<Trade>, PolygonError> {
+	pub fn get_all_trades(&self, symbol: &str, date: &str) -> Result<Vec<Trade>, Error> {
 		let limit: usize = 50_000;
 		let mut params = TradesParams::new().limit(limit).timestamp(date);
 		let mut res = Vec::<Trade>::new();
@@ -195,10 +191,8 @@ impl Client {
 					let split = next_url.split("cursor=").collect::<Vec<&str>>();
 					if split.len() != 2 {
 						let msg = format!("no cursor in next_url {}", next_url);
-						return Err(PolygonError::IoError(Error::new(
-							ErrorKind::UnexpectedEof,
-							msg
-						)));
+						let io_error = io::Error::new(io::ErrorKind::UnexpectedEof, msg);
+						return Err(Error::IoError(io_error));
 					}
 					let cursor = split[1];
 					params = TradesParams::new().cursor(cursor);

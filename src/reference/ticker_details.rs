@@ -1,7 +1,11 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::{Client, Result}, helpers::*, with_param};
+use crate::{
+	client::{Client, Result},
+	helpers::*,
+	with_param
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -1,25 +1,24 @@
+use backoff::ExponentialBackoff;
 use flate2::read::GzDecoder;
 use ratelimit;
 use serde::de::DeserializeOwned;
+use serde_json;
 use std::{
-	env,
-	fmt,
+	env, fmt,
 	io::{self, ErrorKind, Read},
 	thread,
 	time::Duration
 };
 use ureq::{Agent, AgentBuilder};
-use backoff::ExponentialBackoff;
-use serde_json;
 
 #[derive(Debug)]
 pub enum PolygonError {
 	MissingEnv(String),
-    RequestError(ureq::Error),
-    BackoffError(Box<backoff::Error<PolygonError>>),
-    IoError(io::Error),
-    SerdeError(serde_json::Error),
-    ResponseError(backoff::Error<io::Error>)
+	RequestError(ureq::Error),
+	BackoffError(Box<backoff::Error<PolygonError>>),
+	IoError(io::Error),
+	SerdeError(serde_json::Error),
+	ResponseError(backoff::Error<io::Error>)
 }
 
 impl std::error::Error for PolygonError {}
@@ -32,7 +31,7 @@ impl fmt::Display for PolygonError {
 			PolygonError::BackoffError(e) => write!(f, "backoff error {}", e),
 			PolygonError::IoError(e) => write!(f, "io error {}", e),
 			PolygonError::SerdeError(e) => write!(f, "serde error {}", e),
-			PolygonError::ResponseError(e) => write!(f, "response error {}", e),
+			PolygonError::ResponseError(e) => write!(f, "response error {}", e)
 		}
 	}
 }
@@ -93,47 +92,52 @@ impl Client {
 	pub fn get_ratelimit(&self) -> u32 { self.ratelimit }
 
 	pub fn get_response<T: DeserializeOwned>(&mut self, uri: &str) -> Result<T> {
-        let op = || -> std::result::Result<T, backoff::Error<PolygonError>> {
-            self.ratelimit_handle.wait();
-            let resp = self
-                .agent
-                .get(&uri)
-                .set("accept-encoding", "gzip")
-                .set("authorization", &format!("Bearer {}", self.key))
-                .call();
-            if let Err(e) = resp {
-                return Err(backoff::Error::transient(PolygonError::RequestError(e)));
-            }
-            let resp = resp.unwrap();
+		let op = || -> std::result::Result<T, backoff::Error<PolygonError>> {
+			self.ratelimit_handle.wait();
+			let resp = self
+				.agent
+				.get(&uri)
+				.set("accept-encoding", "gzip")
+				.set("authorization", &format!("Bearer {}", self.key))
+				.call();
+			if let Err(e) = resp {
+				return Err(backoff::Error::transient(PolygonError::RequestError(e)));
+			}
+			let resp = resp.unwrap();
 
-            let status = resp.status();
-            if status != 200 {
-                return Err(backoff::Error::transient(PolygonError::IoError(io::Error::new(
-                    ErrorKind::NotConnected,
-                    format!("Server returned {}", status)
-                ))));
-            }
+			let status = resp.status();
+			if status != 200 {
+				return Err(backoff::Error::transient(PolygonError::IoError(
+					io::Error::new(
+						ErrorKind::NotConnected,
+						format!("Server returned {}", status)
+					)
+				)));
+			}
 
-            let content_encoding = resp.header("content-encoding");
-            if content_encoding.is_none() || content_encoding.unwrap() != "gzip" {
-                return resp.into_json::<T>().map_err(|e| backoff::Error::permanent(PolygonError::IoError(e)));
-            }
+			let content_encoding = resp.header("content-encoding");
+			if content_encoding.is_none() || content_encoding.unwrap() != "gzip" {
+				return resp
+					.into_json::<T>()
+					.map_err(|e| backoff::Error::permanent(PolygonError::IoError(e)));
+			}
 
-            // Decompress
-            let mut bytes: Vec<u8> = Vec::new();
-            resp
-                .into_reader()
-                .read_to_end(&mut bytes)
-                .map_err(|e| PolygonError::IoError(e))?;
+			// Decompress
+			let mut bytes: Vec<u8> = Vec::new();
+			resp
+				.into_reader()
+				.read_to_end(&mut bytes)
+				.map_err(|e| PolygonError::IoError(e))?;
 
-            let mut decoder = GzDecoder::new(&bytes[..]);
-            let mut body = String::new();
-            decoder.read_to_string(&mut body).unwrap();
+			let mut decoder = GzDecoder::new(&bytes[..]);
+			let mut body = String::new();
+			decoder.read_to_string(&mut body).unwrap();
 
-            return serde_json::from_str::<T>(&body).map_err(|e| backoff::Error::permanent(PolygonError::SerdeError(e)));
-        };
-        
-        let backoff = ExponentialBackoff::default();
-        backoff::retry(backoff, op).map_err(|e| PolygonError::BackoffError(Box::new(e)))
+			return serde_json::from_str::<T>(&body)
+				.map_err(|e| backoff::Error::permanent(PolygonError::SerdeError(e)));
+		};
+
+		let backoff = ExponentialBackoff::default();
+		backoff::retry(backoff, op).map_err(|e| PolygonError::BackoffError(Box::new(e)))
 	}
 }

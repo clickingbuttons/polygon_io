@@ -2,7 +2,11 @@ extern crate serde_json;
 extern crate ureq;
 
 use super::Candle;
-use crate::{client::{Client, Result}, helpers::make_params, with_param};
+use crate::{
+	client::{Client, Result},
+	helpers::make_params,
+	with_param
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

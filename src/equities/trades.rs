@@ -1,7 +1,11 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::{Client, PolygonError}, helpers::make_params, with_param};
+use crate::{
+	client::{Client, PolygonError},
+	helpers::make_params,
+	with_param
+};
 use serde::{de, Deserialize, Serialize, Serializer};
 use serde_json::to_string;
 use std::{
@@ -191,7 +195,10 @@ impl Client {
 					let split = next_url.split("cursor=").collect::<Vec<&str>>();
 					if split.len() != 2 {
 						let msg = format!("no cursor in next_url {}", next_url);
-						return Err(PolygonError::IoError(Error::new(ErrorKind::UnexpectedEof, msg)));
+						return Err(PolygonError::IoError(Error::new(
+							ErrorKind::UnexpectedEof,
+							msg
+						)));
 					}
 					let cursor = split[1];
 					params = TradesParams::new().cursor(cursor);

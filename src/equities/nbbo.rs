@@ -1,9 +1,13 @@
 extern crate serde_json;
 extern crate ureq;
 
-use crate::{client::{Client, Result}, helpers::make_params, with_param};
+use crate::{
+	client::{Client, Result},
+	helpers::make_params,
+	with_param
+};
 use serde::{Deserialize, Serialize};
-use std:: collections::HashMap;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {

@@ -1,6 +1,7 @@
 fn_single_line = true
 format_strings = true
-hard_tabs = false
+hard_tabs = true
+tab_spaces = 2
 max_width = 100
 imports_granularity = "Crate"
 newline_style = "Unix"
@@ -10,7 +11,6 @@ overflow_delimited_expr = true
 reorder_impl_items = true
 struct_field_align_threshold = 8
 struct_lit_single_line = true
-tab_spaces = 2
 trailing_comma = "Never"
 unstable_features = true
 use_field_init_shorthand = true

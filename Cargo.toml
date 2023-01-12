@@ -1,18 +1,17 @@
 [package]
 name = "polygon_io"
-version = "3.2.2"
+version = "4.0.0"
 authors = ["clickingbuttons"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 description = "Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for equities. Built on ureq and chrono."
 repository = "https://github.com/clickingbuttons/polygon_io"
 keywords = ["polygon-io", "polygon", "io", "client"]
 
 [dependencies]
-chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-ureq = { version = "2.2.0", features = ["json"] }
+ureq = { version = "2.6.1", features = ["json"] }
 ratelimit = "0.4.4"
-flate2 = { version = "1.0.22", features = ["zlib-ng-compat"], default-features = false }
+flate2 = { version = "1.0.25", features = ["zlib-ng-compat"], default-features = false }
 

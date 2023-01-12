@@ -1,8 +1,8 @@
 # polygon_io
 
-Rust [Polygon.io](https://polygon.io) client that verifies timestamps are in queried ranges and uses nanoseconds. Converts to EST for US equities. Built on ureq and chrono.
+Rust [Polygon.io](https://polygon.io) client built on ureq, serde, and ratelimit.
 
-Currently not documented and imports are a little wonky. These may be fixed in a future breaking change release.
+Currently not documented and imports are a little wonky.
 
 Currently only uses REST but websockets support is planned.
 
@@ -34,6 +34,7 @@ Currently Core endpoints and some v2 equities are implemented. PRs for more endp
 - [ ] /v1/meta/exchanges
 - [x] /v2/ticks/stocks/trades/{ticker}/{date}
 - [x] /v2/ticks/stocks/nbbo/{ticker}/{date}
+- [x] /v3/trades/{ticker}
 - [ ] /v1/last/stocks/{symbol}
 - [ ] /v1/last_quote/stocks/{symbol}
 - [ ] /v1/open-close/{symbol}/{date}

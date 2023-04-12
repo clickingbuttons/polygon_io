@@ -1,5 +1,6 @@
 extern crate serde_json;
 extern crate ureq;
+use crate::client::Error;
 
 use crate::{
 	client::{Client, Result},
@@ -8,6 +9,9 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io;
+
+const MAX_LIMIT: usize = 50_000;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NBBO {
@@ -35,7 +39,8 @@ pub struct NBBO {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NBBOsResponse {
 	pub results: Vec<NBBO>,
-	// For debugging
+	pub next_url: Option<String>,
+	pub status:   String, // For debugging
 	pub uri:     Option<String>
 }
 
@@ -93,6 +98,30 @@ impl Client {
 
 		Ok(resp)
 	}
+
+	pub fn get_all_nbbo(&self, symbol: &str, date: &str) -> Result<Vec<NBBO>> {
+		let mut params = NBBOsParams::new().limit(MAX_LIMIT).timestamp(date);
+		let mut res = Vec::<NBBO>::new();
+		loop {
+			let page = self.get_nbbo(symbol, Some(&params.params))?;
+			res.extend(page.results.into_iter());
+			match page.next_url {
+				Some(next_url) => {
+					let split = next_url.split("cursor=").collect::<Vec<&str>>();
+					if split.len() != 2 {
+						let msg = format!("no cursor in next_url {}", next_url);
+						let io_error = io::Error::new(io::ErrorKind::UnexpectedEof, msg);
+						return Err(Error::IoError(io_error));
+					}
+					let cursor = split[1];
+					params = NBBOsParams::new().cursor(cursor);
+				}
+				None => break
+			};
+		}
+
+		Ok(res)
+	}
 }
 
 #[cfg(test)]
@@ -109,5 +138,13 @@ mod nbbo {
 			.params;
 		let nbbo = client.get_nbbo("AAPL", Some(&params)).unwrap();
 		assert_eq!(nbbo.results.len(), limit);
+	}
+
+	#[test]
+	fn get_all_works() {
+		let client = Client::new().unwrap();
+		let trades = client.get_all_nbbo("AAPL", "2005-01-03").unwrap();
+		let count = 58_819;
+		assert_eq!(trades.len(), count);
 	}
 }

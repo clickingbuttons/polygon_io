@@ -10,6 +10,8 @@ use serde::{de, Deserialize, Serialize, Serializer};
 use serde_json::to_string;
 use std::{collections::HashMap, fmt, io};
 
+const MAX_LIMIT: usize = 50_000;
+
 // Trade ID:
 // Up to 8 char string in 2015
 // Gone in 2017
@@ -180,8 +182,7 @@ impl Client {
 	}
 
 	pub fn get_all_trades(&self, symbol: &str, date: &str) -> Result<Vec<Trade>, Error> {
-		let limit: usize = 50_000;
-		let mut params = TradesParams::new().limit(limit).timestamp(date);
+		let mut params = TradesParams::new().limit(MAX_LIMIT).timestamp(date);
 		let mut res = Vec::<Trade>::new();
 		loop {
 			let page = self.get_trades(symbol, Some(&params.params))?;
@@ -208,13 +209,14 @@ impl Client {
 #[cfg(test)]
 mod trades {
 	use crate::{client::Client, equities::trades::TradesParams};
+	use crate::equities::trades::MAX_LIMIT;
 
 	#[test]
 	fn appl_2004_works() {
 		let client = Client::new().unwrap();
 		let params = TradesParams::new()
 			.timestamp("2004-01-02")
-			.limit(50_000)
+			.limit(MAX_LIMIT)
 			.params;
 		let trades = client.get_trades("AAPL", Some(&params)).unwrap();
 		let count = 7_452;
